@@ -1,0 +1,13 @@
+@font-face {
+    font-family: 'Octagonal';
+    src: url('Octagonal.eot');
+    src: url('Octagonal.eot?#iefix') format('embedded-opentype'),
+        url('Octagonal.woff2') format('woff2'),
+        url('Octagonal.woff') format('woff'),
+        url('Octagonal.ttf') format('truetype'),
+        url('Octagonal.svg#Octagonal') format('svg');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+

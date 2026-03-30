@@ -1,0 +1,81 @@
+.crono_wrapper {
+	text-align:center;
+	width:300px;
+	color: #04B404;
+	
+}
+.button{
+background color: : #6E6E6E;
+
+}
+.registerid {
+    text-align: center;
+    margin-top: 32px;
+}
+.widget p {
+  display: inline-block;
+  line-height: 1em;
+}
+.registerid input {
+    border: 1px solid #000;
+}
+.fecha {
+  text-align: center;
+  font-size:1.9em;
+  margin-bottom: 0.3125rem;
+  background: #e7ecf2;
+  padding: 20px;
+  width: 100%;
+  text-transform: uppercase;
+}
+.fecha p{
+  margin-bottom: 0px;
+}
+.reloj {
+  font-family: Electrolize, Arial;
+  padding: 10px;
+  font-size: 4em;
+  color: #fff;
+  text-align: center;
+  background:rgb(173, 7, 15);
+}
+
+.reloj .caja-segundos {
+  display: inline-block;
+}
+
+
+* {
+  margin:0;
+  padding: 0;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.fecha1 {
+  text-align: center;
+  font-size:1.9em;
+  margin-bottom: 0.3125rem;
+  /*margin-bottom: 5px;*/
+  background: #FFBF00!important;
+  padding: 20px;
+  width: 100%;
+}
+
+.reloj1 {
+  width: 100%;
+  padding: 20px;
+  font-size: 4em;
+  text-align: center;
+  background: #FFBF00;
+}
+
+.reloj1 .caja-segundos {
+  display: inline-block;
+}
+
+.reloj1 .segundos,
+.reloj1 .ampm {
+  font-size: 4rem;
+  display: inline-block;
+}

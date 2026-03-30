@@ -1,0 +1,103 @@
+<html>
+<!--
+      Author: A. Tres Finocchiaro, tres.finocchiaro@gmail.com
+      License: LGPL 2.1
+      Depends: QZ Tray 2.0.0-alpha1+
+-->
+<!-- Note: jquery is not needed in alpha2 -->
+<script type="text/javascript" src="js/dependencies/jquery-1.11.3.min.js"></script>
+<!-- Note: rsvp can be overriden via qz.setPromiseType(...) TODO:  Get usage from @bberenz -->
+<script type="text/javascript" src="js/dependencies/rsvp-3.1.0.min.js"></script>
+<script type="text/javascript" src="js/qz-tray.js"></script>
+<script>
+    // Scale manufacturers
+    var mt = {
+        vendor: '0x0EB8',
+        product: '0xF000',
+        device: '0x00',
+        endpoint: '0x81',
+    };
+
+    var dymo = {
+        vendor: '0x0922',
+        product: '0x8009',
+        device: '0x00',
+        endpoint: '0x82',
+    };
+
+    // FIXME: Verify with physical scale
+    var stamps = {
+        vendor: '0x1446', // or '0x6A73'
+        product: '0xF000',
+        device: '0x00',
+        endpoint: '0x81',
+    };
+
+    var scale = mt;
+
+    var err = function(e) {
+        console.error(e);
+    }
+
+    var release = function() {
+        qz.usb.releaseDevice(scale.vendor, scale.product).catch(function(e) {
+            console.error(e);
+        });
+    }
+
+    qz.websocket.connect().then(function() {
+        return qz.usb.claimDevice(scale.vendor, scale.product, scale.device);
+    }).catch(err).then(function() {
+        return qz.usb.readData(scale.vendor, scale.product, scale.endpoint, '8');
+    }).then(function(data) {
+        // Get status
+        var status = parseInt(data[1], 16);
+        switch (status) {
+            case 1: // fault
+            case 5: // underweight
+            case 6: // overweight
+            case 7: // calibrate
+            case 8: // re-zero
+                status = 'error';
+                break;
+            case 3:
+                status = 'busy';
+                break;
+            case 2: // stable at zero
+            case 4: // stable non-zero
+            default:
+                status = 'stable';
+        }
+
+        // Get precision
+        var precision = parseInt(data[3], 16);
+        precision = precision ^ -256; // unsigned to signed
+
+        // Get weight
+        data.splice(0, 4);
+        data.reverse();
+        weight = parseInt(data.join(''), 16);
+
+        // Apply precision
+        weight *= Math.pow(10, precision);
+        weigth = weight.toFixed(Math.abs(precision));
+
+        // Get units
+        var units = parseInt(data[2], 16);
+        switch (units) {
+            case 3:
+                units = 'kg';
+                break;
+            case 11: // ounces
+                units = 'oz';
+                break;
+            case 12:
+            default:
+                units = 'lbs';
+        }
+
+        alert(status + ": " + weight + units);
+    }).then(release).catch(release);
+</script>
+
+</html>

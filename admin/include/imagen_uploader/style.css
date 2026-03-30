@@ -1,0 +1,20 @@
+#upload_button {
+    width: auto;
+    height: auto;
+    text-align: center;
+        color:white; 
+    font-family: segoe ui, Arial, sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1em;
+    padding: 6px;
+    border-radius: 6px;
+    -webkit-border-radius: 6px;
+    -moz-border-radius: 6px;
+    border: 1px solid #db0000;
+    background: #db0000;
+}
+
+#upload_button:hover {
+    background: #224a22;
+}

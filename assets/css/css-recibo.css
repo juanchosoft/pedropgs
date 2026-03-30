@@ -1,0 +1,96 @@
+table {
+    width: 100%;
+}
+
+.box-recibo-info-main {
+    min-height: 80px;
+}
+
+.box-recibo-table {
+    min-height: 70px;
+    width: 80mm;
+}
+
+.box-recibo-main {
+    font-size: 16px;
+    padding: 3mm;
+    margin: 0 auto;
+    width: 80mm;
+}
+
+.recibo-info {
+    display: block;
+    float: left;
+    width: 100%;
+}
+
+.recibo-info p {
+    font-size: 14px;
+    color: #000;
+    line-height: 1.5;
+}
+
+.recibo-info-titulo {
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.rt-descripcion {
+    width: 50mm;
+}
+
+.rt-descripcion h1 {
+    display: inline-block;
+    margin: 3px 2px;
+}
+
+.rt-cant h1 {
+    display: inline-block;
+    margin: 3px 2px;
+}
+
+.rt-valor {
+    display: inline-block;
+}
+
+.recibo-tableTitle {
+    font-size: 12px;
+    background: #EEE;
+}
+
+.recibo-service {
+    font-size: 15px;
+}
+
+.recibo-serItem-text {}
+
+.recibo-tablefooter {
+    font-size: 13px;
+    background: #EEE;
+}
+
+.rt-total h1 {
+    display: inline-block;
+    font-size: 12px;
+}
+
+.rt-precioTotal h1 {
+    display: inline-block;
+    font-size: 12px;
+    margin: 3px 2px;
+}
+
+.text {
+    font-family: Arial;
+    font-size: 9pt;
+}
+
+.text1 {
+    font-family: Arial;
+    font-size: 9pt;
+}
+
+.text2 {
+    font-family: Arial;
+    font-size: 4pt;
+}
