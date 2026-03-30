@@ -505,6 +505,13 @@ foreach ($arrUnidades as $val) {
                     </div>
                   </div>
 
+                  <div class="col-sm-3">
+                    <div class="form-group">
+                      <label class="bmd-label-floating">Rest Days</label>
+                      <input type="number" class="form-control" id="dias_descanso" name="dias_descanso" min="0">
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>

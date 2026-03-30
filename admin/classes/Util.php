@@ -989,7 +989,7 @@ class Util
         $db->closeConect();
     }
 
-    public static function trace_log_error($rqst, $controlador = '', $error)
+    public static function trace_log_error($rqst, $controlador = '', $error= '')
     {
         $db = new DbConection();
         $pdo = $db->openConect();
@@ -2120,7 +2120,7 @@ class Util
      *?  Metodo que guarda los errores que sucerdieron con una factura
      *@return type
      *------------------------------------------------------------------------**/
-    public static function trace_log_error_dian($rqst, $controlador = '', $error, $number)
+    public static function trace_log_error_dian($rqst, $controlador = '', $error = '', $number = '')
     {
         $db = new DbConection();
         $pdo = $db->openConect();

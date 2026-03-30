@@ -89,6 +89,7 @@ class Empleado
         $entrega_uniforme = isset($rqst['entrega_uniforme']) ? ($rqst['entrega_uniforme']) : '';
         $enable = isset($rqst['enable']) ? ($rqst['enable']) : 'si';
         $genero = isset($rqst['genero']) ? ($rqst['genero']) : 'si';
+        $dias_descanso = isset($rqst['dias_descanso']) ? intval($rqst['dias_descanso']) : 0;
 
         $imagefileToUpload = isset($_SESSION['file']['nombrearchivo']) ? ($_SESSION['file']['nombrearchivo']) : '';
 
@@ -128,6 +129,7 @@ class Empleado
                     'enable' => $enable,
                     'genero' => $genero,
                     'tbl_unidad_id' => $tbl_unidad_id,
+                    'dias_descanso' => $dias_descanso,
                 );
 
                 $arrfieldsnocomma = array('dtcreate' => Util::date_now_server());
@@ -169,8 +171,8 @@ class Empleado
                 if ($response['output']['valid']) {
 
                     $q = "INSERT INTO " . $db->getTable('tec_employee') . "
-                    (dtcreate, nombre, genero, cc, celular, fecha_ingreso, email, fecha_nacimiento, lugar_nacimiento, direccion, estado_civil,  rh, camisa, pantalon, calzado, entrega_uniforme, image, enable, tbl_unidad_id) 
-                VALUES (" . Util::date_now_server() . ", :nombre, :cc, :genero, :celular, :fecha_ingreso, :email, :fecha_nacimiento, :lugar_nacimiento, :direccion, :estado_civil,:rh, :camisa, :pantalon, :calzado, :entrega_uniforme, :image, :enable, :tbl_unidad_id)";
+                    (dtcreate, nombre, genero, cc, celular, fecha_ingreso, email, fecha_nacimiento, lugar_nacimiento, direccion, estado_civil,  rh, camisa, pantalon, calzado, entrega_uniforme, image, enable, tbl_unidad_id, dias_descanso)
+                VALUES (" . Util::date_now_server() . ", :nombre, :cc, :genero, :celular, :fecha_ingreso, :email, :fecha_nacimiento, :lugar_nacimiento, :direccion, :estado_civil,:rh, :camisa, :pantalon, :calzado, :entrega_uniforme, :image, :enable, :tbl_unidad_id, :dias_descanso)";
                     $result = $pdo->prepare($q);
                     $arrparam = array(
                         ':nombre' => $nombre,
@@ -192,6 +194,7 @@ class Empleado
                         ':image' => $imagefileToUpload,
                         ':enable' => $enable,
                         ':tbl_unidad_id' => $tbl_unidad_id,
+                        ':dias_descanso' => $dias_descanso,
                     );
                     if ($result->execute($arrparam)) {
                         $arrjson = array('output' => array('valid' => true, 'response' => $pdo->lastInsertId()));

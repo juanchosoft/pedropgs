@@ -109,6 +109,7 @@ var EMPLEADO = {
             $("#enable").val(res.enable).trigger("change");
             $("#tbl_unidad_id").val(res.tbl_unidad_id).trigger("change");
             $("#genero").val(res.genero).trigger("change");
+            $("#dias_descanso").val(res.dias_descanso).trigger("change");
             $("#myModal").modal();
 
         } else {
@@ -192,6 +193,7 @@ var EMPLEADO = {
         q.enable = $("#enable").val();
         q.fileToUpload = $("#fileToUpload").val();
         q.tbl_unidad_id = $("#tbl_unidad_id").val();
+        q.dias_descanso = $("#dias_descanso").val();
         UTIL.callAjaxRqstPOST(q, EMPLEADO.savedataHandler);
     },
 

@@ -315,14 +315,12 @@
             <li><a href="./check_list.php">Check List Report</a></li>
          <?php endif; ?>
 
-           <?php if (($esSuperAdmin  ||  $esManagerOAdmin) && SessionData::getPermission(21)): ?>
+           <?php if (($esSuperAdmin || $userUnidad == 7) && SessionData::getPermission(21)): ?>
             <li><a href="./check_list_villasol.php">Check List Report Villasol</a></li>
          <?php endif; ?>
 
-            <?php if (($esSuperAdmin  ||  $esManagerOAdmin) && SessionData::getPermission(21)): ?>
-            ) && SessionData::getPermission(22)): ?>
+         <?php if (($esSuperAdmin || $userUnidad == 7) && SessionData::getPermission(22)): ?>
             <li><a href="./check_report_list_villasol.php">Show Check List Report Villasol</a></li>
-            <li><a href="./calendar.php">Calendar</a></li>
          <?php endif; ?>
 
          <!-- Si es Manager o Staff, pero solo si tienen permisos -->
