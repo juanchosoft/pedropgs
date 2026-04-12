@@ -431,10 +431,18 @@ foreach ($arrUnidades as $val) {
                                 <td class="text-primary"><?php echo $arr[$i]['cc']; ?></td>
                                 <td class="text-primary"><?php echo $arr[$i]['nombre']; ?></td>
                                 <td class="td-actions text-left" style="white-space:nowrap;">
+                                  <?php if ($edit) { ?>
                                   <button type="button" rel="tooltip" class="btn btn-outline-primary btn-sm"
                                     onclick="EMPLEADO.editdata(<?php echo $arr[$i]['id']; ?>);" title="Edit Employee">
                                     <i class="fa fa-pencil"></i>
                                   </button>
+                                  <?php } ?>
+                                  <?php if ($delete) { ?>
+                                  <button type="button" rel="tooltip" class="btn btn-outline-danger btn-sm"
+                                    onclick="EMPLEADO.deletedata(<?php echo $arr[$i]['id']; ?>);" title="Delete Employee">
+                                    <i class="fa fa-trash"></i>
+                                  </button>
+                                  <?php } ?>
                                 </td>
                               </tr>
                           <?php
