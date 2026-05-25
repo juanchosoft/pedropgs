@@ -486,7 +486,7 @@ foreach ($arrUnidades as $val) {
                   <div class="col-sm-3">
                     <div class="form-group">
                       <label class="bmd-label-floating">Id <b class="errLbl">*</b></label>
-                      <input type="text" class="form-control" id="cc" name="cc" onKeyPress="return soloNumeros(event);">
+                      <input type="text" class="form-control" onKeyPress="return soloNumeros(event);" id="cc" name="cc" onKeyPress="return soloNumeros(event);">
                     </div>
                   </div>
 

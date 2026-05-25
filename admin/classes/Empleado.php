@@ -97,6 +97,11 @@ class Empleado
 
             $_SESSION['file']['nombrearchivo'] = NULL;
         }
+
+        if ($cc == "") {
+            Util::info_general('Id is required');
+        }
+
         $db = new DbConection();
         $pdo = $db->openConect();
         if ($id > 0) {
