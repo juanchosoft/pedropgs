@@ -105,6 +105,7 @@ var EMPLEADO = {
             $("#camisa").val(res.camisa).trigger("change");
             $("#pantalon").val(res.pantalon).trigger("change");
             $("#calzado").val(res.calzado).trigger("change");
+            $("#document_id").val(res.document_id).trigger("change");
             $("#entrega_uniforme").val(res.entrega_uniforme).trigger("change");
             $("#enable").val(res.enable).trigger("change");
             $("#tbl_unidad_id").val(res.tbl_unidad_id).trigger("change");
@@ -126,6 +127,7 @@ var EMPLEADO = {
             $("#tbl_unidad_id").val() == "seleccione" ||
             $("#tbl_unidad_id").val() == "" ||
             $("#nombre").val() == "" ||
+            $("#document_id").val() == "" ||
             $("#cc").val() == "" ||
             $("#celular").val() == ""          
         ) {
@@ -176,6 +178,7 @@ var EMPLEADO = {
         q.op = "pms_empleadosave";
         q.id = $("#id").val();
         q.nombre = $("#nombre").val();
+        q.document_id = $("#document_id").val();        
         q.cc = $("#cc").val();
         q.fecha_ingreso = $("#fecha_ingreso").val();
         q.celular = $("#celular").val();

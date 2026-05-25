@@ -559,6 +559,13 @@ $modulo = 'Users';
 
               <div class="col-sm-6">
                 <div class="form-group">
+                  <label class="bmd-label-floating">Employee ID <b class="errLbl">*</b></label>
+                  <input type="number" class="form-control" id="employee_id" name="employee_id">
+                </div>
+              </div>
+
+              <div class="col-sm-6">
+                <div class="form-group">
                   <label class="bmd-label-floating">Last Name <b class="errLbl">*</b></label>
                   <input type="text" class="form-control" id="apellido" name="apellido">
                 </div>
