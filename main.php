@@ -546,6 +546,538 @@ $arrUnidadesData = $arrUnidades;
     .pgs-grid .col-xxl-6,
     .pgs-grid .col-lg-6,
     .pgs-grid .col-sm-6{ margin-bottom: 14px; }
+
+    /* =========================================================
+   MAIN DASHBOARD RESPONSIVE PRO
+   Mejoras visuales sin tocar lógica PHP
+   PC / Tablet / Mobile
+   ========================================================= */
+
+:root{
+  --pgs-main-red:#E11D2E;
+  --pgs-main-red-dark:#B3121E;
+  --pgs-main-black:#080B10;
+  --pgs-main-text:#111827;
+  --pgs-main-muted:#4B5563;
+  --pgs-main-border:rgba(17,24,39,.10);
+  --pgs-main-shadow:0 18px 40px rgba(17,24,39,.12);
+}
+
+/* Fondo general más limpio */
+.content-body{
+  background:
+    radial-gradient(700px 280px at 10% 0%, rgba(225,29,46,.08), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%) !important;
+}
+
+.content-body .container-fluid{
+  max-width: 1480px;
+}
+
+/* =========================================================
+   HERO DASHBOARD
+   ========================================================= */
+
+.pgs-hero{
+  border-radius: 26px !important;
+  padding: 18px !important;
+  background:
+    radial-gradient(500px 240px at 8% 0%, rgba(225,29,46,.16), transparent 62%),
+    radial-gradient(500px 260px at 100% 0%, rgba(17,24,39,.10), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.90)) !important;
+  border: 1px solid rgba(17,24,39,.09) !important;
+  box-shadow: 0 16px 34px rgba(17,24,39,.10) !important;
+}
+
+.pgs-hero-title{
+  color: #0b0f14 !important;
+  font-weight: 1000 !important;
+  letter-spacing: -.04em !important;
+}
+
+.pgs-hero-sub{
+  color: #374151 !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+.pgs-chip{
+  color: #111827 !important;
+  background: rgba(255,255,255,.90) !important;
+  border: 1px solid rgba(17,24,39,.10) !important;
+  box-shadow: 0 10px 22px rgba(17,24,39,.07) !important;
+}
+
+.pgs-chip i{
+  color: var(--pgs-main-red) !important;
+}
+
+/* =========================================================
+   WELCOME ALERT
+   ========================================================= */
+
+.pgs-alert{
+  border-radius: 24px !important;
+  padding: 14px 48px 14px 16px !important;
+  background:
+    radial-gradient(420px 160px at 100% 0%, rgba(225,29,46,.10), transparent 64%),
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.91)) !important;
+  border: 1px solid rgba(17,24,39,.08) !important;
+  box-shadow: 0 14px 30px rgba(17,24,39,.08) !important;
+}
+
+.pgs-alert .pgs-alert-line{
+  color: #111827 !important;
+  font-size: .94rem !important;
+}
+
+.pgs-alert strong{
+  color: #080B10 !important;
+}
+
+.pgs-badge{
+  color: var(--pgs-main-red-dark) !important;
+  background: rgba(225,29,46,.08) !important;
+  border-color: rgba(225,29,46,.20) !important;
+}
+
+/* =========================================================
+   CARD DAYS OFF - VERSION PRO COMPACTA
+   ========================================================= */
+
+.pgs-rest-wrapper{
+  margin-bottom: 14px !important;
+}
+
+.pgs-rest-card{
+  min-height: auto !important;
+  padding: 16px !important;
+  border-radius: 26px !important;
+  border: 1px solid rgba(225,29,46,.16) !important;
+  background:
+    radial-gradient(360px 180px at 100% 0%, rgba(225,29,46,.12), transparent 64%),
+    radial-gradient(300px 150px at 0% 100%, rgba(17,24,39,.055), transparent 62%),
+    linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
+  box-shadow: 0 16px 34px rgba(17,24,39,.10) !important;
+  overflow: hidden !important;
+}
+
+/* Decoraciones más suaves para que no tapen texto */
+.pgs-rest-card:before{
+  right: -90px !important;
+  top: -95px !important;
+  width: 190px !important;
+  height: 190px !important;
+  background: rgba(225,29,46,.08) !important;
+}
+
+.pgs-rest-card:after{
+  right: 18px !important;
+  bottom: -34px !important;
+  width: 86px !important;
+  height: 86px !important;
+  background: linear-gradient(180deg, rgba(225,29,46,.12), rgba(225,29,46,.04)) !important;
+}
+
+/* Estructura */
+.pgs-rest-content{
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+
+.pgs-rest-left{
+  display: grid !important;
+  grid-template-columns: 50px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 13px !important;
+  min-width: 0 !important;
+}
+
+.pgs-rest-left > div:last-child{
+  min-width: 0 !important;
+}
+
+/* Icono */
+.pgs-rest-icon{
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 18px !important;
+  background:
+    radial-gradient(34px 34px at 30% 20%, rgba(255,255,255,.34), transparent 65%),
+    linear-gradient(180deg, var(--pgs-main-red), var(--pgs-main-red-dark)) !important;
+  box-shadow: 0 14px 26px rgba(225,29,46,.24) !important;
+}
+
+/* Etiqueta */
+.pgs-rest-kicker{
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-bottom: 7px !important;
+  padding: 6px 10px !important;
+  color: var(--pgs-main-red-dark) !important;
+  background: rgba(225,29,46,.08) !important;
+  border: 1px solid rgba(225,29,46,.18) !important;
+  font-size: .72rem !important;
+  font-weight: 1000 !important;
+  line-height: 1 !important;
+}
+
+/* Títulos con contraste */
+.pgs-rest-title{
+  margin: 0 !important;
+  color: #080B10 !important;
+  font-size: 1rem !important;
+  line-height: 1.18 !important;
+  font-weight: 1000 !important;
+  letter-spacing: -.025em !important;
+}
+
+.pgs-rest-sub{
+  margin: 6px 0 0 0 !important;
+  max-width: 620px !important;
+  color: #374151 !important;
+  font-size: .84rem !important;
+  line-height: 1.42 !important;
+  font-weight: 750 !important;
+}
+
+/* Número de días más elegante */
+.pgs-rest-number{
+  width: 86px !important;
+  min-width: 86px !important;
+  height: 86px !important;
+  border-radius: 28px !important;
+  background:
+    radial-gradient(58px 58px at 30% 18%, rgba(255,255,255,.30), transparent 68%),
+    linear-gradient(180deg, #ff304f 0%, #b3121e 100%) !important;
+  box-shadow: 0 16px 30px rgba(225,29,46,.24) !important;
+}
+
+.pgs-rest-number strong{
+  color: #ffffff !important;
+  font-size: 2rem !important;
+  line-height: .9 !important;
+  font-weight: 1000 !important;
+}
+
+.pgs-rest-number span{
+  color: rgba(255,255,255,.94) !important;
+  font-size: .68rem !important;
+  font-weight: 1000 !important;
+  letter-spacing: .03em !important;
+}
+
+/* Footer de la card */
+.pgs-rest-foot{
+  margin-top: 13px !important;
+  gap: 8px !important;
+}
+
+.pgs-rest-mini{
+  padding: 7px 10px !important;
+  color: #1f2937 !important;
+  background: rgba(255,255,255,.92) !important;
+  border: 1px solid rgba(17,24,39,.10) !important;
+  box-shadow: 0 8px 18px rgba(17,24,39,.06) !important;
+  font-size: .76rem !important;
+  font-weight: 900 !important;
+}
+
+.pgs-rest-mini i{
+  color: var(--pgs-main-red) !important;
+}
+
+/* =========================================================
+   UNIT CARDS MÁS LIMPIAS
+   ========================================================= */
+
+.pgs-unit-card.card{
+  border-radius: 24px !important;
+  background:
+    radial-gradient(220px 120px at 0% 0%, rgba(225,29,46,.08), transparent 66%),
+    linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
+  border: 1px solid rgba(17,24,39,.08) !important;
+  box-shadow: 0 14px 30px rgba(17,24,39,.08) !important;
+}
+
+.pgs-unit-card .card-body{
+  padding: 15px !important;
+}
+
+.pgs-unit-title{
+  color: #080B10 !important;
+}
+
+.pgs-unit-meta{
+  color: #4b5563 !important;
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 991.98px){
+
+  .content-body .container-fluid{
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .pgs-hero{
+    padding: 16px !important;
+  }
+
+  .pgs-rest-card{
+    padding: 15px !important;
+  }
+
+  .pgs-rest-number{
+    width: 80px !important;
+    min-width: 80px !important;
+    height: 80px !important;
+    border-radius: 24px !important;
+  }
+
+  .pgs-rest-number strong{
+    font-size: 1.8rem !important;
+  }
+}
+
+/* =========================================================
+   MOBILE - LO MÁS IMPORTANTE
+   ========================================================= */
+
+@media (max-width: 575.98px){
+
+  .content-body .container-fluid{
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-top: 10px !important;
+  }
+
+  /* Hero más compacto */
+  .pgs-hero{
+    border-radius: 22px !important;
+    padding: 14px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .pgs-hero-title{
+    font-size: 1.28rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .pgs-hero-sub{
+    margin-top: 5px !important;
+    font-size: .82rem !important;
+  }
+
+  .pgs-chiprow{
+    gap: 7px !important;
+    margin-top: 12px !important;
+  }
+
+  .pgs-chip{
+    padding: 7px 9px !important;
+    font-size: .72rem !important;
+    line-height: 1 !important;
+  }
+
+  .pgs-hero-actions{
+    gap: 8px !important;
+    margin-top: 12px !important;
+  }
+
+  .pgs-btn,
+  .pgs-btn-outline{
+    padding: 9px 12px !important;
+    font-size: .78rem !important;
+    border-radius: 999px !important;
+  }
+
+  /* Welcome más delgado */
+  .pgs-alert{
+    border-radius: 20px !important;
+    padding: 12px 44px 12px 14px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .pgs-alert .pgs-alert-line{
+    gap: 6px !important;
+    font-size: .82rem !important;
+  }
+
+  .pgs-badge{
+    padding: 6px 8px !important;
+    font-size: .68rem !important;
+  }
+
+  /* Card de días compacta */
+  .pgs-rest-wrapper{
+    margin-bottom: 12px !important;
+  }
+
+  .pgs-rest-card{
+    padding: 13px !important;
+    border-radius: 22px !important;
+  }
+
+  .pgs-rest-content{
+    grid-template-columns: 1fr 66px !important;
+    gap: 10px !important;
+    align-items: start !important;
+  }
+
+  .pgs-rest-left{
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    align-items: start !important;
+  }
+
+  .pgs-rest-icon{
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 15px !important;
+    font-size: 1rem !important;
+  }
+
+  .pgs-rest-kicker{
+    padding: 5px 8px !important;
+    margin-bottom: 6px !important;
+    font-size: .64rem !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    line-height: 1.15 !important;
+  }
+
+  .pgs-rest-title{
+    font-size: .86rem !important;
+    line-height: 1.18 !important;
+    max-width: 100% !important;
+  }
+
+  .pgs-rest-sub{
+    margin-top: 5px !important;
+    font-size: .72rem !important;
+    line-height: 1.35 !important;
+    color: #374151 !important;
+    font-weight: 800 !important;
+  }
+
+  .pgs-rest-number{
+    width: 66px !important;
+    min-width: 66px !important;
+    height: 66px !important;
+    border-radius: 20px !important;
+    align-self: start !important;
+  }
+
+  .pgs-rest-number strong{
+    font-size: 1.55rem !important;
+    line-height: .9 !important;
+  }
+
+  .pgs-rest-number span{
+    margin-top: 3px !important;
+    font-size: .56rem !important;
+  }
+
+  .pgs-rest-foot{
+    margin-top: 11px !important;
+    gap: 6px !important;
+  }
+
+  .pgs-rest-mini{
+    padding: 6px 8px !important;
+    font-size: .68rem !important;
+    line-height: 1 !important;
+  }
+
+  /* Cards inferiores más limpias */
+  .pgs-grid .col-xl-3,
+  .pgs-grid .col-lg-4,
+  .pgs-grid .col-md-6,
+  .pgs-grid .col-sm-6{
+    margin-bottom: 10px !important;
+  }
+
+  .pgs-unit-card.card{
+    border-radius: 20px !important;
+  }
+
+  .pgs-unit-card .card-body{
+    padding: 13px !important;
+  }
+
+  .pgs-unit-icon{
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 14px !important;
+  }
+
+  .pgs-unit-title{
+    font-size: .88rem !important;
+  }
+
+  .pgs-unit-meta{
+    font-size: .72rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .pgs-unit-actions{
+    margin-top: 10px !important;
+  }
+
+  .pgs-pill{
+    padding: 6px 9px !important;
+    font-size: .68rem !important;
+  }
+
+  .pgs-go{
+    padding: 8px 12px !important;
+    font-size: .72rem !important;
+  }
+}
+
+/* Celulares muy angostos */
+@media (max-width: 380px){
+
+  .pgs-rest-content{
+    grid-template-columns: 1fr 60px !important;
+  }
+
+  .pgs-rest-left{
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .pgs-rest-icon{
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 14px !important;
+  }
+
+  .pgs-rest-number{
+    width: 60px !important;
+    min-width: 60px !important;
+    height: 60px !important;
+    border-radius: 18px !important;
+  }
+
+  .pgs-rest-number strong{
+    font-size: 1.38rem !important;
+  }
+
+  .pgs-rest-title{
+    font-size: .80rem !important;
+  }
+
+  .pgs-rest-sub{
+    font-size: .68rem !important;
+  }
+}
   </style>
 </head>
 
@@ -558,7 +1090,7 @@ $arrUnidadesData = $arrUnidades;
     </div>
   </div>
 
-  <?php include './admin/include/menu_movil_vistas.php'; ?>
+
   <div id="main-wrapper">
     <?php include './admin/include/generic_header.php'; ?>
 
@@ -647,7 +1179,7 @@ $arrUnidadesData = $arrUnidades;
                       Days off available for <?php echo htmlspecialchars($nombreRestUser); ?>
                     </h3>
                     <p class="pgs-rest-sub">
-                      This information is linked because employee CC and user employee ID match.
+                      These are the available leave days you still have. If you need to use them, please request approval from your supervisor.
                     </p>
                   </div>
                 </div>

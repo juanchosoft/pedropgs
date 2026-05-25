@@ -31,7 +31,7 @@ class Permiso
             foreach ($result as $valor) {
                 $arrassigned[] = $valor;
             }
-            $q1 = "SELECT * FROM " . $db->getTable('tec_permisos') . " ORDER BY nombre ASC";
+            $q1 = "SELECT * FROM " . $db->getTable('tec_permisos') . " ORDER BY id ASC";
             $result1 = $pdo->query($q1);
             $arravailable = array();
             if ($result1) {

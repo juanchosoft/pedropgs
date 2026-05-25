@@ -28,6 +28,58 @@ $arr = Usuario::getAll(null);
 $isvalid = $arr['output']['valid'];
 $arr = $arr['output']['response'];
 
+
+/* ==========================================================
+   Rest days by Employee ID
+   This allows the edit modal to remember if the user is an employee
+   and show the remaining rest days registered in tec_employee.
+========================================================== */
+$employeeRestDaysByEmployeeId = array();
+
+if ($isvalid && is_array($arr)) {
+  $employeeIds = array();
+
+  foreach ($arr as $u) {
+    $empIdTmp = isset($u['employee_id']) ? trim((string)$u['employee_id']) : '';
+    if ($empIdTmp !== '') {
+      $employeeIds[$empIdTmp] = $empIdTmp;
+    }
+  }
+
+  if (count($employeeIds) > 0) {
+    try {
+      $dbEmp = new DbConection();
+      $pdoEmp = $dbEmp->openConect();
+
+      $placeholders = array();
+      $params = array();
+      $idx = 0;
+
+      foreach ($employeeIds as $empId) {
+        $key = ':emp_' . $idx;
+        $placeholders[] = $key;
+        $params[$key] = $empId;
+        $idx++;
+      }
+
+      $qEmp = "SELECT employee_id, dias_descanso
+               FROM " . $dbEmp->getTable('tec_employee') . "
+               WHERE employee_id IN (" . implode(',', $placeholders) . ")";
+
+      $stmtEmp = $pdoEmp->prepare($qEmp);
+      $stmtEmp->execute($params);
+
+      while ($rowEmp = $stmtEmp->fetch(PDO::FETCH_ASSOC)) {
+        $employeeRestDaysByEmployeeId[trim((string)$rowEmp['employee_id'])] = isset($rowEmp['dias_descanso']) ? $rowEmp['dias_descanso'] : '';
+      }
+
+      $dbEmp->closeConect();
+    } catch (Exception $e) {
+      $employeeRestDaysByEmployeeId = array();
+    }
+  }
+}
+
 $totalUsuarios = 0;
 $totalActivos = 0;
 $totalInactivos = 0;
@@ -831,6 +883,75 @@ $modulo = 'Users';
       transition:opacity .2s ease, transform .2s ease;
     }
 
+
+    .pgs-ui #rest_days_wrap{
+      display:none;
+      transition:opacity .2s ease, transform .2s ease;
+    }
+
+    .pgs-ui .rest-days-card{
+      min-height:72px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:14px 15px;
+      border:1px solid rgba(22,163,74,.18);
+      border-radius:20px;
+      background:
+        radial-gradient(180px 70px at 15% 0%, rgba(22,163,74,.10), transparent 68%),
+        linear-gradient(135deg, #FFFFFF, #F8FAFC);
+      box-shadow:0 14px 32px rgba(2,6,23,.07);
+    }
+
+    .pgs-ui .rest-days-icon{
+      width:44px;
+      height:44px;
+      min-width:44px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:16px;
+      color:#fff;
+      background:linear-gradient(135deg, #16A34A, #15803D);
+      box-shadow:0 12px 24px rgba(22,163,74,.22);
+      font-size:18px;
+    }
+
+    .pgs-ui .rest-days-content{
+      flex:1;
+      min-width:0;
+    }
+
+    .pgs-ui .rest-days-content small{
+      display:block;
+      color:#64748B;
+      font-size:11px;
+      line-height:1.25;
+      font-weight:850;
+      letter-spacing:.035em;
+      text-transform:uppercase;
+    }
+
+    .pgs-ui .rest-days-content strong{
+      display:block;
+      margin-top:2px;
+      color:#0F172A;
+      font-size:18px;
+      line-height:1.15;
+      font-weight:1000;
+      letter-spacing:-.03em;
+    }
+
+    .pgs-ui .rest-days-content span{
+      display:block;
+      margin-top:2px;
+      color:#667085;
+      font-size:12px;
+      line-height:1.25;
+      font-weight:750;
+    }
+
     /* Modal permisos */
     .pgs-ui #myModalPermisos .card,
     #myModalPermisos .pgs-ui .card{
@@ -1074,7 +1195,7 @@ $modulo = 'Users';
     </div>
   </div>
 
-  <?php include './admin/include/menu_movil_vistas.php'; ?>
+
   <div id="main-wrapper">
     <?php include './admin/include/generic_header.php'; ?>
 
@@ -1298,6 +1419,20 @@ $modulo = 'Users';
                 </div>
               </div>
 
+              <div class="col-sm-6" id="rest_days_wrap" style="display:none;">
+                <div class="form-group rest-days-card">
+                  <div class="rest-days-icon">
+                    <i class="fa fa-calendar-check-o"></i>
+                  </div>
+                  <div class="rest-days-content">
+                    <small>Remaining rest days</small>
+                    <strong id="dias_descanso_text">0 days</strong>
+                    <span id="dias_descanso_hint">This information is linked to the employee record.</span>
+                    <input type="hidden" id="dias_descanso" name="dias_descanso" value="">
+                  </div>
+                </div>
+              </div>
+
               <div class="col-sm-6">
                 <div class="form-group">
                   <label class="bmd-label-floating">Last Name <b class="errLbl">*</b></label>
@@ -1452,6 +1587,8 @@ $modulo = 'Users';
   <script type="text/javascript" src="./admin/js/permisos.js"></script>
 
   <script>
+    window.PGS_EMPLOYEE_REST_DAYS = <?php echo json_encode($employeeRestDaysByEmployeeId, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+
     /**
      * Bloqueo seguro para campos numéricos del modal.
      * No cambia nombres, ids, formulario, backend ni lógica existente.
@@ -1517,13 +1654,75 @@ $modulo = 'Users';
 
     /**
      * Muestra Employee ID solo cuando el usuario se marca como empleado.
-     * Mantiene intactos ids, names, formulario y envío existente.
+     * Además recuerda el estado al editar y muestra los días de descanso restantes.
+     * Mantiene intactos ids, names, formulario, backend y envío existente.
      */
     (function () {
       'use strict';
 
       function qs(selector) {
         return document.querySelector(selector);
+      }
+
+      function getRestDaysMap() {
+        return window.PGS_EMPLOYEE_REST_DAYS || {};
+      }
+
+      function normalizeValue(value) {
+        return String(value == null ? '' : value).trim();
+      }
+
+      function formatDays(value) {
+        var clean = normalizeValue(value);
+
+        if (clean === '') {
+          return '0 days';
+        }
+
+        var number = parseFloat(clean);
+        if (!isNaN(number)) {
+          return number + (number === 1 ? ' day' : ' days');
+        }
+
+        return clean + ' days';
+      }
+
+      function getRestDaysByEmployeeId(employeeId) {
+        employeeId = normalizeValue(employeeId);
+        if (employeeId === '') return '';
+
+        var map = getRestDaysMap();
+        return Object.prototype.hasOwnProperty.call(map, employeeId) ? map[employeeId] : '';
+      }
+
+      function updateRestDays(employeeId, isEmployee) {
+        var wrap = qs('#rest_days_wrap');
+        var text = qs('#dias_descanso_text');
+        var hint = qs('#dias_descanso_hint');
+        var hidden = qs('#dias_descanso');
+
+        employeeId = normalizeValue(employeeId);
+
+        if (!wrap || !text || !hidden) return;
+
+        if (!isEmployee || employeeId === '') {
+          wrap.style.display = 'none';
+          text.textContent = '0 days';
+          hidden.value = '';
+          if (hint) hint.textContent = 'This information is linked to the employee record.';
+          return;
+        }
+
+        var days = getRestDaysByEmployeeId(employeeId);
+        wrap.style.display = '';
+        text.textContent = formatDays(days);
+        hidden.value = normalizeValue(days);
+
+        if (hint) {
+          hint.textContent = days === ''
+            ? 'No remaining rest days have been registered for this employee yet.'
+            : 'These are the available leave days still linked to this employee.';
+        }
       }
 
       function setEmployeeMode(isEmployee, keepValue) {
@@ -1545,6 +1744,8 @@ $modulo = 'Users';
         if (!check.checked && !keepValue) {
           input.value = '';
         }
+
+        updateRestDays(input.value, check.checked);
       }
 
       function syncEmployeeModeFromValue() {
@@ -1553,15 +1754,81 @@ $modulo = 'Users';
 
         if (!input || !check) return;
 
-        if (String(input.value || '').trim() !== '') {
+        var hasEmployeeId = normalizeValue(input.value) !== '';
+
+        if (hasEmployeeId) {
           setEmployeeMode(true, true);
         } else {
           setEmployeeMode(check.checked, true);
         }
       }
 
+      function validateEmployeeBeforeSave(event) {
+        var check = qs('#es_empleado');
+        var input = qs('#employee_id');
+
+        if (!check || !input) return true;
+
+        if (check.checked && normalizeValue(input.value) === '') {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (typeof event.stopImmediatePropagation === 'function') {
+              event.stopImmediatePropagation();
+            }
+          }
+
+          if (window.Swal) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Employee ID required',
+              text: 'If the user is marked as employee, you must enter the Employee ID.',
+              confirmButtonText: 'OK'
+            });
+          } else {
+            alert('If the user is marked as employee, you must enter the Employee ID.');
+          }
+
+          setEmployeeMode(true, true);
+          setTimeout(function () { input.focus(); }, 80);
+          return false;
+        }
+
+        if (!check.checked) {
+          input.value = '';
+          updateRestDays('', false);
+        }
+
+        return true;
+      }
+
+      function installEditPolling() {
+        var attempts = 0;
+        var lastValue = null;
+
+        var timer = setInterval(function () {
+          var input = qs('#employee_id');
+          if (!input) return;
+
+          var currentValue = normalizeValue(input.value);
+
+          if (currentValue !== lastValue) {
+            lastValue = currentValue;
+            syncEmployeeModeFromValue();
+          } else {
+            syncEmployeeModeFromValue();
+          }
+
+          attempts++;
+          if (attempts >= 16) {
+            clearInterval(timer);
+          }
+        }, 150);
+      }
+
       document.addEventListener('DOMContentLoaded', function () {
         var check = qs('#es_empleado');
+        var input = qs('#employee_id');
         var form  = qs('#formcreate');
 
         setEmployeeMode(false, true);
@@ -1570,35 +1837,36 @@ $modulo = 'Users';
           check.addEventListener('change', function () {
             setEmployeeMode(this.checked, false);
 
-            if (this.checked) {
-              var input = qs('#employee_id');
-              if (input) {
-                setTimeout(function () { input.focus(); }, 80);
-              }
+            if (this.checked && input) {
+              setTimeout(function () { input.focus(); }, 80);
+            }
+          });
+        }
+
+        if (input) {
+          input.addEventListener('input', function () {
+            if (normalizeValue(this.value) !== '') {
+              setEmployeeMode(true, true);
+            } else {
+              updateRestDays('', check && check.checked);
             }
           });
         }
 
         if (form) {
-          form.addEventListener('submit', function () {
-            var check = qs('#es_empleado');
-            setEmployeeMode(check && check.checked, false);
+          form.addEventListener('submit', function (event) {
+            validateEmployeeBeforeSave(event);
           }, true);
         }
 
         if (window.jQuery) {
-          jQuery('#myModal').on('show.bs.modal shown.bs.modal', function () {
+          jQuery('#myModal').on('show.bs.modal', function () {
             setEmployeeMode(false, true);
+            installEditPolling();
+          });
 
-            var attempts = 0;
-            var timer = setInterval(function () {
-              syncEmployeeModeFromValue();
-              attempts++;
-
-              if (attempts >= 8) {
-                clearInterval(timer);
-              }
-            }, 150);
+          jQuery('#myModal').on('shown.bs.modal', function () {
+            installEditPolling();
           });
 
           jQuery('#myModal').on('hidden.bs.modal', function () {
@@ -1612,9 +1880,13 @@ $modulo = 'Users';
         if (!btn) return;
 
         var onclick = btn.getAttribute('onclick') || '';
+
         if (onclick.indexOf('USUARIO.validateData') !== -1) {
-          var check = qs('#es_empleado');
-          setEmployeeMode(check && check.checked, false);
+          validateEmployeeBeforeSave(event);
+        }
+
+        if (onclick.indexOf('USUARIO.editdata') !== -1) {
+          installEditPolling();
         }
 
         if (onclick.indexOf("UTIL.clearForm('formcreate')") !== -1 || onclick.indexOf('UTIL.clearForm("formcreate")') !== -1) {
@@ -1623,6 +1895,10 @@ $modulo = 'Users';
           }, 80);
         }
       }, true);
+
+      window.PGS_setEmployeeMode = setEmployeeMode;
+      window.PGS_syncEmployeeModeFromValue = syncEmployeeModeFromValue;
+      window.PGS_updateRestDays = updateRestDays;
     })();
   </script>
 

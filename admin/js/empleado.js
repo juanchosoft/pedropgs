@@ -126,8 +126,7 @@ var EMPLEADO = {
         if (
             $("#tbl_unidad_id").val() == "seleccione" ||
             $("#tbl_unidad_id").val() == "" ||
-            $("#nombre").val() == "" ||
-            $("#document_id").val() == "" ||
+            $("#nombre").val() == "" ||         
             $("#cc").val() == "" ||
             $("#celular").val() == ""          
         ) {

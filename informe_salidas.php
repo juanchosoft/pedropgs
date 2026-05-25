@@ -9,11 +9,11 @@ $entradas = $arr['output']['response'];
 $modulo = 'Record time Employes';
 
 // Permissions
-$view   = SessionData::getPermission(33);
-$create = SessionData::getPermission(34);
-$edit   = SessionData::getPermission(35);
-$delete = SessionData::getPermission(36);
-$enable = SessionData::getPermission(37);
+$view   = SessionData::getPermission(45);
+$create = SessionData::getPermission(46);
+$edit   = SessionData::getPermission(47);
+$delete = SessionData::getPermission(48);
+$enable = SessionData::getPermission(49);
 
 if (!$view) { require 'permiso_denegado.php'; exit; }
 ?>
@@ -242,7 +242,7 @@ if (!$view) { require 'permiso_denegado.php'; exit; }
     </div>
   </div>
 
-  <?php include './admin/include/menu_movil_vistas.php'; ?>
+
   <div id="main-wrapper">
     <?php include './admin/include/generic_header.php'; ?>
 

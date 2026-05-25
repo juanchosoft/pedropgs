@@ -22,25 +22,58 @@ class Usuario
 
         try {
             if ($id > 0) {
-                $q = "SELECT * FROM " . $db->getTable('tec_usuarios') . " WHERE id = :id";
+                /*
+                 * Cuando se consulta un usuario para editar,
+                 * también traemos los días de descanso desde tec_employee.
+                 *
+                 * Relación correcta:
+                 * tec_usuarios.employee_id = tec_employee.cc
+                 */
+                $q = "SELECT 
+                        u.*,
+                        e.dias_descanso,
+                        CASE 
+                            WHEN u.employee_id IS NOT NULL AND u.employee_id <> '' THEN 'si'
+                            ELSE 'no'
+                        END AS es_empleado
+                      FROM " . $db->getTable('tec_usuarios') . " AS u
+                      LEFT JOIN " . $db->getTable('tec_employee') . " AS e
+                        ON e.cc = u.employee_id
+                      WHERE u.id = :id
+                      LIMIT 1";
+
                 $stmt = $pdo->prepare($q);
                 $stmt->execute([':id' => $id]);
+
             } elseif ($tipo != "") {
-                $q = "SELECT * FROM " . $db->getTable('tec_usuarios') . " 
-                      WHERE tipo = :tipo AND habilitado = 'si' 
+                $q = "SELECT * 
+                      FROM " . $db->getTable('tec_usuarios') . " 
+                      WHERE tipo = :tipo 
+                      AND habilitado = 'si' 
                       ORDER BY nombre ASC";
+
                 $stmt = $pdo->prepare($q);
                 $stmt->execute([':tipo' => $tipo]);
+
             } else {
-                $q = "SELECT * FROM " . $db->getTable('tec_usuarios') . " 
+                $q = "SELECT * 
+                      FROM " . $db->getTable('tec_usuarios') . " 
                       ORDER BY id DESC 
                       LIMIT 100";
+
                 $stmt = $pdo->prepare($q);
                 $stmt->execute();
             }
 
             $arr = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $arrjson = array('output' => array('valid' => true, 'response' => $arr));
+
+            $arrjson = array(
+                'output' => array(
+                    'valid' => true,
+                    'response' => $arr
+                )
+            );
+
         } catch (PDOException $e) {
             $arrjson = Util::error_general('Error consultando usuarios: ' . $e->getMessage());
         }
@@ -57,15 +90,25 @@ class Usuario
         $pdo = $db->openConect();
 
         try {
-            $q = "SELECT id FROM " . $db->getTable('tec_usuarios') . " WHERE nickname = :nickname LIMIT 1";
+            $q = "SELECT id 
+                  FROM " . $db->getTable('tec_usuarios') . " 
+                  WHERE nickname = :nickname 
+                  LIMIT 1";
+
             $stmt = $pdo->prepare($q);
             $stmt->execute([':nickname' => $nickname]);
 
             if ($stmt->fetch(PDO::FETCH_ASSOC)) {
                 $arrjson = Util::error_general('The user email already exists');
             } else {
-                $arrjson = array('output' => array('valid' => true, 'response' => 'available'));
+                $arrjson = array(
+                    'output' => array(
+                        'valid' => true,
+                        'response' => 'available'
+                    )
+                );
             }
+
         } catch (PDOException $e) {
             $arrjson = Util::error_general('Error validando usuario: ' . $e->getMessage());
         }
@@ -87,7 +130,8 @@ class Usuario
                 $hashpass = Util::make_hash_pass($hashpass);
             }
 
-            $q = "SELECT * FROM " . $db->getTable('tec_usuarios') . " 
+            $q = "SELECT * 
+                  FROM " . $db->getTable('tec_usuarios') . " 
                   WHERE nickname = :nickname 
                   AND hashpass = :hashpass 
                   AND habilitado = 'yes'
@@ -120,6 +164,7 @@ class Usuario
             $stmtPermisos->execute([':id' => $id]);
 
             $arrassigned = array();
+
             foreach ($stmtPermisos->fetchAll(PDO::FETCH_ASSOC) as $permiso) {
                 $arrassigned[] = $permiso['tec_permiso_id'];
             }
@@ -129,18 +174,28 @@ class Usuario
             $arr = array();
             $arr[] = $usuario;
 
-            $q4 = "SELECT * FROM " . $db->getTable('tec_config') . " ORDER BY id LIMIT 1";
+            $q4 = "SELECT * 
+                   FROM " . $db->getTable('tec_config') . " 
+                   ORDER BY id 
+                   LIMIT 1";
+
             $stmtConfig = $pdo->prepare($q4);
             $stmtConfig->execute();
+
             $arr4 = $stmtConfig->fetchAll(PDO::FETCH_ASSOC);
 
             $telefono_emergencia = "";
             $unidad = "";
 
             if ($tbl_unidad_id > 0) {
-                $q5 = "SELECT * FROM " . $db->getTable('tbl_unidades') . " WHERE id = :tbl_unidad_id LIMIT 1";
+                $q5 = "SELECT * 
+                       FROM " . $db->getTable('tbl_unidades') . " 
+                       WHERE id = :tbl_unidad_id 
+                       LIMIT 1";
+
                 $stmtUnidad = $pdo->prepare($q5);
                 $stmtUnidad->execute([':tbl_unidad_id' => $tbl_unidad_id]);
+
                 $unidadData = $stmtUnidad->fetch(PDO::FETCH_ASSOC);
 
                 if ($unidadData) {
@@ -159,6 +214,7 @@ class Usuario
                     'unidad' => $unidad
                 )
             );
+
         } catch (PDOException $e) {
             $arrjson = Util::error_general('Error iniciando sesión: ' . $e->getMessage());
         }
@@ -205,6 +261,7 @@ class Usuario
 
                 $stmtOld = $pdo->prepare($qOld);
                 $stmtOld->execute([':id' => $id]);
+
                 $usuarioActual = $stmtOld->fetch(PDO::FETCH_ASSOC);
 
                 if (!$usuarioActual) {
@@ -213,10 +270,6 @@ class Usuario
                 }
 
                 $imgAnterior = isset($usuarioActual['img']) ? $usuarioActual['img'] : '';
-
-                /*
-                 * Si no se sube imagen nueva, conserva la anterior.
-                 */
                 $imgFinal = $imgNueva != "" ? $imgNueva : $imgAnterior;
 
                 /*
@@ -238,6 +291,7 @@ class Usuario
                       WHERE id = :id";
 
                 $stmt = $pdo->prepare($q);
+
                 $ok = $stmt->execute([
                     ':nickname' => $nickname,
                     ':hashpass' => $hashFinal,
@@ -257,7 +311,8 @@ class Usuario
                 }
 
                 /*
-                 * Actualiza o crea empleado solo si viene employee_id.
+                 * Si tiene Employee ID, se sincroniza con tec_employee usando cc.
+                 * No se modifican los días restantes.
                  */
                 if ($employee_id != "") {
                     self::syncEmployee($pdo, $db, $employee_id, $nombre, $apellido, $nickname, $tbl_unidad_id);
@@ -268,6 +323,7 @@ class Usuario
                  */
                 if ($imgNueva != "" && $imgAnterior != "" && $imgNueva != $imgAnterior) {
                     $rutaAnterior = "../assets/img/admin/" . $imgAnterior;
+
                     if (file_exists($rutaAnterior)) {
                         @unlink($rutaAnterior);
                     }
@@ -329,6 +385,7 @@ class Usuario
                     )";
 
             $stmt = $pdo->prepare($q);
+
             $ok = $stmt->execute([
                 ':nickname' => $nickname,
                 ':hashpass' => $hashpass,
@@ -349,10 +406,7 @@ class Usuario
             $usuarioId = $pdo->lastInsertId();
 
             /*
-             * IMPORTANTE:
              * Solo crea o actualiza empleado cuando employee_id viene con información.
-             * Esto evita el error HY000 cuando la tabla empleado tiene campos obligatorios
-             * o restricciones con employee_id vacío.
              */
             if ($employee_id != "") {
                 self::syncEmployee($pdo, $db, $employee_id, $nombre, $apellido, $nickname, $tbl_unidad_id);
@@ -364,6 +418,7 @@ class Usuario
                     'response' => $usuarioId
                 )
             );
+
         } catch (PDOException $e) {
             $arrjson = Util::error_general('Error guardando usuario: ' . $e->getMessage());
         }
@@ -383,68 +438,83 @@ class Usuario
         $nombreCompleto = trim($nombre . " " . $apellido);
 
         /*
-         * Primero revisamos si el empleado ya existe para no duplicarlo.
+         * IMPORTANTE:
+         * En tec_usuarios el campo se llama employee_id.
+         * En tec_employee el campo real se llama cc.
+         *
+         * Relación:
+         * tec_usuarios.employee_id = tec_employee.cc
          */
+
         $qCheck = "SELECT id 
                    FROM " . $db->getTable('tec_employee') . " 
-                   WHERE employee_id = :employee_id 
+                   WHERE cc = :cc 
                    LIMIT 1";
 
         $stmtCheck = $pdo->prepare($qCheck);
-        $stmtCheck->execute([':employee_id' => $employee_id]);
+        $stmtCheck->execute([
+            ':cc' => $employee_id
+        ]);
+
         $empleado = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
         if ($empleado) {
             /*
-             * Si existe, lo actualizamos.
-             * No tocamos días de descanso ni otros campos para no dañar información existente.
+             * Si existe, actualizamos solo información básica.
+             * No tocamos dias_descanso para no borrar los días restantes.
              */
             $qUpdate = "UPDATE " . $db->getTable('tec_employee') . " SET
                             nombre = :nombre,
                             email = :email,
                             enable = :enable,
                             tbl_unidad_id = :tbl_unidad_id
-                        WHERE employee_id = :employee_id";
+                        WHERE cc = :cc";
 
             $stmtUpdate = $pdo->prepare($qUpdate);
+
             return $stmtUpdate->execute([
                 ':nombre' => $nombreCompleto,
                 ':email' => $email,
                 ':enable' => 'si',
                 ':tbl_unidad_id' => $tbl_unidad_id,
-                ':employee_id' => $employee_id
+                ':cc' => $employee_id
             ]);
         }
 
         /*
          * Si no existe, lo creamos.
+         * dias_descanso inicia en 0 para que después puedas actualizarlo desde empleados.
          */
         $qInsert = "INSERT INTO " . $db->getTable('tec_employee') . " 
                     (
                         dtcreate, 
                         nombre, 
-                        employee_id, 
+                        cc, 
                         email, 
                         enable, 
-                        tbl_unidad_id
+                        tbl_unidad_id,
+                        dias_descanso
                     ) 
                     VALUES 
                     (
                         " . Util::date_now_server() . ", 
                         :nombre, 
-                        :employee_id, 
+                        :cc, 
                         :email, 
                         :enable, 
-                        :tbl_unidad_id
+                        :tbl_unidad_id,
+                        :dias_descanso
                     )";
 
         $stmtInsert = $pdo->prepare($qInsert);
+
         return $stmtInsert->execute([
             ':nombre' => $nombreCompleto,
-            ':employee_id' => $employee_id,
+            ':cc' => $employee_id,
             ':email' => $email,
             ':enable' => 'si',
-            ':tbl_unidad_id' => $tbl_unidad_id
+            ':tbl_unidad_id' => $tbl_unidad_id,
+            ':dias_descanso' => 0
         ]);
     }
 
@@ -467,15 +537,22 @@ class Usuario
             $stmt1 = $pdo->prepare($q1);
             $stmt1->execute([':id' => $id]);
 
-            $q = "DELETE FROM " . $db->getTable('tec_usuarios') . " WHERE id = :id";
+            $q = "DELETE FROM " . $db->getTable('tec_usuarios') . " 
+                  WHERE id = :id";
+
             $stmt = $pdo->prepare($q);
             $ok = $stmt->execute([':id' => $id]);
 
             if ($ok) {
-                $arrjson = array('output' => array('valid' => true));
+                $arrjson = array(
+                    'output' => array(
+                        'valid' => true
+                    )
+                );
             } else {
                 $arrjson = Util::error_generaldelete();
             }
+
         } catch (PDOException $e) {
             $arrjson = Util::error_general('Error eliminando usuario: ' . $e->getMessage());
         }
@@ -503,16 +580,23 @@ class Usuario
                   WHERE id = :id";
 
             $stmt = $pdo->prepare($q);
+
             $ok = $stmt->execute([
                 ':habilitado' => $habilitado,
                 ':id' => $id
             ]);
 
             if ($ok) {
-                $arrjson = array('output' => array('valid' => true, 'response' => array()));
+                $arrjson = array(
+                    'output' => array(
+                        'valid' => true,
+                        'response' => array()
+                    )
+                );
             } else {
                 $arrjson = Util::error_general('No fue posible cambiar el estado del usuario');
             }
+
         } catch (PDOException $e) {
             $arrjson = Util::error_general('Error cambiando estado del usuario: ' . $e->getMessage());
         }
@@ -529,7 +613,9 @@ class Usuario
         $pdo = $db->openConect();
 
         try {
-            $q = "SELECT * FROM " . $db->getTable('tec_confisys');
+            $q = "SELECT * 
+                  FROM " . $db->getTable('tec_confisys');
+
             $stmt = $pdo->prepare($q);
             $stmt->execute();
 
@@ -544,6 +630,7 @@ class Usuario
 
                 $stmtCantidad = $pdo->prepare($q1);
                 $stmtCantidad->execute([':tipo' => $tipo]);
+
                 $rowCantidad = $stmtCantidad->fetch(PDO::FETCH_ASSOC);
 
                 if ($rowCantidad) {
@@ -558,6 +645,7 @@ class Usuario
                     'cantidad' => $cantidad
                 )
             );
+
         } catch (PDOException $e) {
             $arrjson = Util::error_general('Error consultando configuración: ' . $e->getMessage());
         }
