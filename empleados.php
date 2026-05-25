@@ -360,7 +360,7 @@ foreach ($arrUnidades as $val) {
     </div>
   </div>
 
-  <?php include './admin/include/menu_movil_vistas.php'; ?>
+
   <div id="main-wrapper">
     <?php include './admin/include/generic_header.php'; ?>
 
@@ -486,9 +486,9 @@ foreach ($arrUnidades as $val) {
                   <div class="col-sm-3">
                     <div class="form-group">
                       <label class="bmd-label-floating">Id <b class="errLbl">*</b></label>
-                      <input type="text" class="form-control" onKeyPress="return soloNumeros(event);" id="cc" name="cc" onKeyPress="return soloNumeros(event);">
+                      <input type="text" class="form-control only-numbers" id="cc" name="cc" inputmode="numeric" pattern="[0-9]*" autocomplete="off" onkeypress="return soloNumeros(event);" oninput="limpiarSoloNumeros(this);">
                     </div>
-                  </div>
+                  </div>                
 
                   <div class="col-sm-3">
                     <div class="form-group">
@@ -516,7 +516,7 @@ foreach ($arrUnidades as $val) {
                   <div class="col-sm-3">
                     <div class="form-group">
                       <label class="bmd-label-floating">Rest Days</label>
-                      <input type="number" class="form-control" id="dias_descanso" name="dias_descanso" min="0">
+                      <input type="text" class="form-control only-numbers" id="dias_descanso" name="dias_descanso" inputmode="numeric" pattern="[0-9]*" autocomplete="off" onkeypress="return soloNumeros(event);" oninput="limpiarSoloNumeros(this);">
                     </div>
                   </div>
 
@@ -548,7 +548,7 @@ foreach ($arrUnidades as $val) {
                       <div class="col-sm-3">
                         <div class="form-group">
                           <label class="bmd-label-floating">CellPhone*</label>
-                          <input type="text" class="form-control" id="celular" name="celular" onKeyPress="return soloNumeros(event);">
+                          <input type="text" class="form-control only-numbers" id="celular" name="celular" inputmode="numeric" pattern="[0-9]*" autocomplete="off" onkeypress="return soloNumeros(event);" oninput="limpiarSoloNumeros(this);">
                         </div>
                       </div>
 
@@ -912,6 +912,59 @@ foreach ($arrUnidades as $val) {
 
   <?php include './admin/include/gerenic_script.php'; ?>
   <?php include './admin/include/generic_dataTables.php'; ?>
+
+
+  <script>
+    /**
+     * Bloquea letras y caracteres especiales en campos numéricos del modal.
+     * Se deja como función global porque el HTML ya usa soloNumeros(event).
+     */
+    function soloNumeros(e) {
+      var tecla = e.which || e.keyCode;
+
+      // Permite: backspace, tab, enter, escape, supr, flechas, home/end
+      var teclasPermitidas = [8, 9, 13, 27, 35, 36, 37, 38, 39, 40, 46];
+      if (teclasPermitidas.indexOf(tecla) !== -1) {
+        return true;
+      }
+
+      // Permite copiar, pegar, cortar, seleccionar todo
+      if ((e.ctrlKey || e.metaKey) && [65, 67, 86, 88].indexOf(tecla) !== -1) {
+        return true;
+      }
+
+      var caracter = String.fromCharCode(tecla);
+      return /^[0-9]$/.test(caracter);
+    }
+
+    /**
+     * Limpia cualquier valor pegado o autocompletado que traiga letras.
+     */
+    function limpiarSoloNumeros(input) {
+      input.value = String(input.value || '').replace(/\D+/g, '');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var camposNumericos = document.querySelectorAll('#myModal .only-numbers');
+
+      camposNumericos.forEach(function (campo) {
+        campo.addEventListener('paste', function () {
+          var input = this;
+          setTimeout(function () {
+            limpiarSoloNumeros(input);
+          }, 0);
+        });
+
+        campo.addEventListener('drop', function (e) {
+          e.preventDefault();
+        });
+
+        campo.addEventListener('input', function () {
+          limpiarSoloNumeros(this);
+        });
+      });
+    });
+  </script>
 
   <script type="text/javascript" src="./admin/js/empleado.js"></script>
 </body>

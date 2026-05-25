@@ -11,7 +11,7 @@ class DbConection
     $this->host   = "localhost";
     $this->user   = "root";
     $this->pass   = "";
-    $this->dbName = "pgs";
+    $this->dbName = "pgscentrum";
 
     // Timestamp (según tu lógica actual)
     $this->server_date = 'DATE_ADD(NOW(),INTERVAL 1 HOUR)';

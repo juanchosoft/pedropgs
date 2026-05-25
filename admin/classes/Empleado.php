@@ -73,6 +73,7 @@ class Empleado
         $id = isset($rqst['id']) ? intval($rqst['id']) : 0;
         $tbl_unidad_id = isset($rqst['tbl_unidad_id']) ? intval($rqst['tbl_unidad_id']) : 0;
         $nombre = isset($rqst['nombre']) ? ($rqst['nombre']) : '';
+        $document_id = isset($rqst['document_id']) ? ($rqst['document_id']) : '1';
         $cc = isset($rqst['cc']) ? ($rqst['cc']) : '';
         $fecha_ingreso = isset($rqst['fecha_ingreso']) ? ($rqst['fecha_ingreso']) : '';
         $telefono = isset($rqst['telefono']) ? ($rqst['telefono']) : '';
@@ -125,6 +126,7 @@ class Empleado
 
                 $arrfieldscomma = array(
                     'nombre' => $nombre,
+                    'document_id' => $document_id,
                     'cc' => $cc,
                     'telefono' => $telefono,
                     'celular' => $celular,
@@ -169,11 +171,12 @@ class Empleado
                 if ($response['output']['valid']) {
 
                     $q = "INSERT INTO " . $db->getTable('tec_employee') . "
-                    (dtcreate, nombre, genero, cc, celular, fecha_ingreso, email, fecha_nacimiento, lugar_nacimiento, direccion, estado_civil,  rh, camisa, pantalon, calzado, entrega_uniforme, image, enable, tbl_unidad_id, dias_descanso)
-                VALUES (" . Util::date_now_server() . ", :nombre, :cc, :genero, :celular, :fecha_ingreso, :email, :fecha_nacimiento, :lugar_nacimiento, :direccion, :estado_civil,:rh, :camisa, :pantalon, :calzado, :entrega_uniforme, :image, :enable, :tbl_unidad_id, :dias_descanso)";
+                    (dtcreate, nombre, document_id, genero, cc, celular, fecha_ingreso, email, fecha_nacimiento, lugar_nacimiento, direccion, estado_civil,  rh, camisa, pantalon, calzado, entrega_uniforme, image, enable, tbl_unidad_id, dias_descanso)
+                VALUES (" . Util::date_now_server() . ", :nombre, :document_id, :cc, :genero, :celular, :fecha_ingreso, :email, :fecha_nacimiento, :lugar_nacimiento, :direccion, :estado_civil,:rh, :camisa, :pantalon, :calzado, :entrega_uniforme, :image, :enable, :tbl_unidad_id, :dias_descanso)";
                     $result = $pdo->prepare($q);
                     $arrparam = array(
                         ':nombre' => $nombre,
+                        'document_id' => $document_id,
                         ':genero' => $genero,
                         ':cc' => $cc,
                         ':celular' => $celular,
