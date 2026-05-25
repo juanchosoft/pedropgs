@@ -8,107 +8,64 @@ class EntradaSalida
 
     public static function save($rqst)
     {
-
-        $cc = isset($rqst['cc']) ? intval($rqst['cc']) : '';
-        $fecha = isset($rqst['fecha']) ? ($rqst['fecha']) : '';
-        $coords = isset($rqst['coords']) ? ($rqst['coords']) : '';
+        $cc = isset($rqst['cc']) ? intval($rqst['cc']) : 0;
+        $fecha = $rqst['fecha'] ?? '';
+        $coords = $rqst['coords'] ?? '';
         $today = date("Y-m-d");
         $ip = Util::get_real_ipaddress();
 
-
- 
+        if (empty($cc)) {
+            return Util::error_missing_data('Citizenship card is mandatory');
+        }
 
         $db = new DbConection();
         $pdo = $db->openConect();
 
-        if ($cc  != "") {
+        try {
+            $pdo->beginTransaction();
 
-            $q_cc = "SELECT * FROM " . $db->getTable('tec_employee') . " WHERE cc = " . $cc . " LIMIT 1";
-            $result_cc = $pdo->query($q_cc);
-            $arr_cc = array();
+            // 1. Verificar existencia de usuario usando Prepared Statement
+            $stmt = $pdo->prepare("SELECT nombre FROM " . $db->getTable('tec_employee') . " WHERE cc = :cc LIMIT 1");
+            $stmt->execute([':cc' => $cc]);
+            $empleado = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($result_cc) {
-                foreach ($result_cc as $valor_cc) {
-                    $arr_cc[] = $valor_cc;
-                }
-
-                if (count($arr_cc) == 0) {
-                    $arrjson = Util::error_general('The document ' . $cc . ' does not exist in the database..');
-                } else {
-
-                    // Se valida que no tenga ingreso del día actual
-                    $q_ingreso_dia_actual = "SELECT * FROM " . $db->getTable('tec_entry') . " WHERE cc = '$cc'  AND entrada >= '$today 00:00:01' AND entrada <= '$today 23:59:59'  ";
-                    $result_ingreso = $pdo->query($q_ingreso_dia_actual);
-                    $arr_ingreso = array();
-                    if ($result_ingreso) {
-
-                        foreach ($result_ingreso as $valor_ingreso) {
-                            $arr_ingreso[] = $valor_ingreso;
-                        }
-
-                        if (count($arr_ingreso) == 0) {
-                            $q = "INSERT INTO " . $db->getTable('tec_entry') . " (cc, entrada, ip, coords) VALUES (:cc, :entrada, :ip, :coords)";
-                            $result = $pdo->prepare($q);
-                            $arrparam = array(
-                                ':cc' => $cc,
-                                ':entrada' => $fecha,
-                                ':ip' => $ip,
-                                ':coords' => $coords,
-                            );
-
-                            if ($result->execute($arrparam)) {
-                                $arrjson = array('output' => array('valid' => true, 'response' => 'Welcome to the company and we wish you a good day and look forward to your best attitude. '  . $arr_cc[0]['nombre']));
-                            } else {
-                                $arrjson = Util::error_general('Entering employee input information');
-                            }
-                        } else {
-
-                            // Se valida que no tenga ingreso del día actual
-                            $q_ingreso_dia_actual = "SELECT * FROM " . $db->getTable('tec_exit') . " WHERE cc = '$cc'  AND salida >= '$today 00:00:01' AND salida <= '$today 23:59:59'  ";
-                            $result_ingreso = $pdo->query($q_ingreso_dia_actual);
-                            $arr_ingreso = array();
-                            if ($result_ingreso) {
-
-                                foreach ($result_ingreso as $valor_ingreso) {
-                                    $arr_ingreso[] = $valor_ingreso;
-                                }
-                                if (count($arr_ingreso) == 0) {
-                                    $q = "INSERT INTO " . $db->getTable('tec_exit') . "  (cc, salida, ip,coords)  VALUES (:cc, :salida, :ip, :coords)";
-                                    $result = $pdo->prepare($q);
-                                    $arrparam = array(
-                                        ':cc' => $cc,
-                                        ':salida' => $fecha,
-                                        ':ip' => $ip,
-                                        ':coords' => $coords,
-                                    );
-
-                                    if ($result->execute($arrparam)) {
-                                        $arrjson = array('output' => array('valid' => true, 'response' => 'See you tomorrow and have a nice rest of the afternoon '  . $arr_cc[0]['nombre']));
-                                    } else {
-                                        $arrjson = Util::error_general('Entering Output Information');
-                                    }
-                                } else {
-                                    $arrjson = array('output' => array('valid' => true, 'response' => ' Happy day '  . $arr_cc[0]['nombre']));
-                                }
-                                // print_r($arrjson);
-                                // echo "<br>";
-                                // echo ' Empelado --->'.$arr_cc[0]['nombre'];
-                                // echo "<br>";
-                                // exit();
-
-                            } else {
-                                $arrjson = Util::error_general('Querying Output Information');
-                            }
-                        }
-                    } else {
-                        $arrjson = Util::error_general('Consulting income information');
-                    }
-                }
-            } else {
-                $arrjson = Util::error_general('Querying user information');
+            if (!$empleado) {
+                $pdo->rollBack();
+                return Util::error_general('The document ' . $cc . ' does not exist in the database.');
             }
-        } else {
-            $arrjson = Util::error_missing_data('Citizenship card is mandatory');
+
+            // 2. Verificar entrada del día
+            $stmt = $pdo->prepare("SELECT id FROM " . $db->getTable('tec_entry') . " WHERE cc = :cc AND DATE(entrada) = :today");
+            $stmt->execute([':cc' => $cc, ':today' => $today]);
+            $yaIngreso = $stmt->fetch();
+
+            if (!$yaIngreso) {
+                // Registrar Entrada
+                $stmt = $pdo->prepare("INSERT INTO " . $db->getTable('tec_entry') . " (cc, entrada, ip, coords) VALUES (:cc, :entrada, :ip, :coords)");
+                $stmt->execute([':cc' => $cc, ':entrada' => $fecha, ':ip' => $ip, ':coords' => $coords]);
+                $msg = 'Welcome to the company ' . $empleado['nombre'];
+            } else {
+                // 3. Verificar si ya registró salida
+                $stmt = $pdo->prepare("SELECT id FROM " . $db->getTable('tec_exit') . " WHERE cc = :cc AND DATE(salida) = :today");
+                $stmt->execute([':cc' => $cc, ':today' => $today]);
+                $yaSalio = $stmt->fetch();
+
+                if (!$yaSalio) {
+                    // Registrar Salida
+                    $stmt = $pdo->prepare("INSERT INTO " . $db->getTable('tec_exit') . " (cc, salida, ip, coords) VALUES (:cc, :salida, :ip, :coords)");
+                    $stmt->execute([':cc' => $cc, ':salida' => $fecha, ':ip' => $ip, ':coords' => $coords]);
+                    $msg = 'See you tomorrow, ' . $empleado['nombre'];
+                } else {
+                    $msg = 'Happy day ' . $empleado['nombre'];
+                }
+            }
+
+            $pdo->commit();
+            $arrjson = array('output' => array('valid' => true, 'response' => $msg));
+
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $arrjson = Util::error_general('System error processing record: ' . $e->getMessage());
         }
 
         $db->closeConect();
