@@ -8,6 +8,77 @@ $arr = Main::getDataMain(null);
 $isvalid = $arr['output']['valid'];
 $modulo = 'Dashboard';
 
+
+/*
+ * Days off / rest days for logged user
+ * ---------------------------------------------------------
+ * This block is safe:
+ * - It only shows the card if the logged user has information.
+ * - It keeps the current dashboard functionality intact.
+ * - It supports the getAllrestday(['id' => user_id]) format.
+ */
+$sessionUserId = 0;
+
+if (class_exists('SessionData')) {
+  if (method_exists('SessionData', 'getUserId')) {
+    $sessionUserId = intval(SessionData::getUserId());
+  } elseif (method_exists('SessionData', 'getIdUser')) {
+    $sessionUserId = intval(SessionData::getIdUser());
+  } elseif (method_exists('SessionData', 'getUserIdData')) {
+    $sessionUserId = intval(SessionData::getUserIdData());
+  }
+}
+
+/* Extra fallback, in case the project stores the user id directly in $_SESSION */
+if ($sessionUserId <= 0 && isset($_SESSION)) {
+  $sessionUserId = intval(
+    $_SESSION['user_id']
+    ?? $_SESSION['id_user']
+    ?? $_SESSION['id']
+    ?? $_SESSION['usuario_id']
+    ?? 0
+  );
+}
+
+$arrDescansoData = array();
+$restDayUser = null;
+$hasRestDayInfo = false;
+
+$arrDescansoRqst = ($sessionUserId > 0) ? array('id' => $sessionUserId) : null;
+$arrDescanso = Main::getAllrestday($arrDescansoRqst);
+
+if (
+  isset($arrDescanso['output']['valid']) &&
+  $arrDescanso['output']['valid'] === true &&
+  isset($arrDescanso['output']['response']) &&
+  is_array($arrDescanso['output']['response'])
+) {
+  $arrDescansoData = $arrDescanso['output']['response'];
+
+  /*
+   * If Main::getAllrestday(['id' => logged_user_id]) already returns one user,
+   * take the first one. If it returns all, filter by usuario_id.
+   */
+  foreach ($arrDescansoData as $descansoItem) {
+    $usuarioIdRow = intval($descansoItem['usuario_id'] ?? $descansoItem['id'] ?? 0);
+
+    if ($sessionUserId <= 0 || $usuarioIdRow === $sessionUserId || count($arrDescansoData) === 1) {
+      $restDayUser = $descansoItem;
+      break;
+    }
+  }
+
+  if (
+    is_array($restDayUser) &&
+    array_key_exists('dias_descanso', $restDayUser) &&
+    $restDayUser['dias_descanso'] !== null &&
+    $restDayUser['dias_descanso'] !== ''
+  ) {
+    $hasRestDayInfo = true;
+  }
+}
+
+
 $arrUnidades = Unidades::getAll(null);
 $isvalid = $arrUnidades['output']['valid'];
 $arrUnidades = $arrUnidades['output']['response'];
@@ -159,6 +230,186 @@ $arrUnidadesData = $arrUnidades;
       font-weight: 1000;
       font-size: .78rem;
     }
+
+    /* Logged user rest days card */
+    .pgs-rest-wrapper{
+      margin-bottom: 16px;
+    }
+    .pgs-rest-card{
+      position: relative;
+      min-height: 164px;
+      border-radius: calc(var(--pgs-radius) + 6px);
+      border: 1px solid rgba(225,29,46,.14);
+      background:
+        radial-gradient(420px 220px at 10% 10%, rgba(225,29,46,.18), transparent 66%),
+        radial-gradient(520px 240px at 100% 20%, rgba(11,15,20,.12), transparent 64%),
+        linear-gradient(180deg, rgba(255,255,255,.97), rgba(255,255,255,.86));
+      box-shadow: var(--pgs-shadow-soft);
+      overflow: hidden;
+      padding: 18px;
+    }
+    .pgs-rest-card:before{
+      content:"";
+      position:absolute;
+      right:-70px;
+      top:-70px;
+      width: 210px;
+      height: 210px;
+      border-radius: 999px;
+      background: rgba(225,29,46,.10);
+      filter: blur(.2px);
+      pointer-events:none;
+    }
+    .pgs-rest-card:after{
+      content:"";
+      position:absolute;
+      right: 22px;
+      bottom: 18px;
+      width: 92px;
+      height: 92px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(225,29,46,.18), rgba(179,18,30,.08));
+      border: 1px solid rgba(225,29,46,.16);
+      pointer-events:none;
+    }
+    .pgs-rest-content{
+      position:relative;
+      z-index:2;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 16px;
+    }
+    .pgs-rest-left{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      min-width:0;
+    }
+    .pgs-rest-icon{
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+      color:#fff;
+      background: linear-gradient(180deg, var(--pgs-red), var(--pgs-red-2));
+      box-shadow: 0 18px 32px rgba(225,29,46,.25);
+      font-size: 1.25rem;
+    }
+    .pgs-rest-kicker{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(225,29,46,.10);
+      border: 1px solid rgba(225,29,46,.16);
+      color: var(--pgs-red-2);
+      font-size: .76rem;
+      font-weight: 1000;
+      margin-bottom: 8px;
+    }
+    .pgs-rest-title{
+      margin:0;
+      color: var(--pgs-black);
+      font-size: 1rem;
+      line-height: 1.2;
+      font-weight: 1000;
+      letter-spacing: -.01em;
+    }
+    .pgs-rest-sub{
+      margin: 5px 0 0 0;
+      color: var(--pgs-muted);
+      font-size: .84rem;
+      font-weight: 700;
+    }
+    .pgs-rest-number{
+      position:relative;
+      z-index:3;
+      width: 96px;
+      min-width: 96px;
+      height: 96px;
+      border-radius: 28px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      background:
+        radial-gradient(60px 60px at 30% 20%, rgba(255,255,255,.32), transparent 68%),
+        linear-gradient(180deg, var(--pgs-red), var(--pgs-red-2));
+      box-shadow: 0 22px 38px rgba(225,29,46,.28);
+      border: 1px solid rgba(255,255,255,.26);
+      text-align:center;
+    }
+    .pgs-rest-number strong{
+      display:block;
+      font-size: 2.05rem;
+      line-height: .95;
+      font-weight: 1000;
+      letter-spacing: -.04em;
+    }
+    .pgs-rest-number span{
+      display:block;
+      margin-top: 4px;
+      font-size: .72rem;
+      line-height: 1;
+      font-weight: 900;
+      text-transform: uppercase;
+      opacity:.94;
+    }
+    .pgs-rest-foot{
+      position:relative;
+      z-index:2;
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .pgs-rest-mini{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(11,15,20,.09);
+      background: rgba(255,255,255,.76);
+      color: rgba(11,15,20,.72);
+      font-size: .78rem;
+      font-weight: 900;
+      backdrop-filter: blur(10px);
+    }
+    .pgs-rest-mini i{ color: var(--pgs-red); }
+    @media (max-width: 575.98px){
+      .pgs-rest-card{ padding: 16px; }
+      .pgs-rest-content{
+        align-items:flex-start;
+      }
+      .pgs-rest-left{
+        align-items:flex-start;
+      }
+      .pgs-rest-icon{
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+      }
+      .pgs-rest-number{
+        width: 78px;
+        min-width: 78px;
+        height: 78px;
+        border-radius: 22px;
+      }
+      .pgs-rest-number strong{
+        font-size: 1.65rem;
+      }
+      .pgs-rest-title{
+        font-size: .94rem;
+      }
+    }
+
 
     /* Unit cards */
     .pgs-unit-card.card{
@@ -366,6 +617,64 @@ $arrUnidadesData = $arrUnidades;
             <span><i class="mdi mdi-close"></i></span>
           </button>
         </div>
+
+        <?php if ($hasRestDayInfo): ?>
+          <?php
+            $diasDescanso = intval($restDayUser['dias_descanso']);
+            $nombreRestUser = trim(
+              ($restDayUser['nombre_usuario'] ?? '') . ' ' . ($restDayUser['apellido'] ?? '')
+            );
+            if ($nombreRestUser === '') {
+              $nombreRestUser = $restDayUser['nombre_empleado'] ?? SessionData::getUserFullName();
+            }
+            $employeeIdRest = $restDayUser['employee_id'] ?? $restDayUser['cc'] ?? '';
+          ?>
+          <!-- ✅ Logged user rest days card -->
+          <div class="pgs-rest-wrapper">
+            <div class="pgs-rest-card">
+              <div class="pgs-rest-content">
+                <div class="pgs-rest-left">
+                  <div class="pgs-rest-icon" aria-hidden="true">
+                    <i class="fa fa-calendar-check-o"></i>
+                  </div>
+
+                  <div style="min-width:0;">
+                    <span class="pgs-rest-kicker">
+                      <i class="fa fa-user-check"></i>
+                      Employee rest balance
+                    </span>
+                    <h3 class="pgs-rest-title">
+                      Days off available for <?php echo htmlspecialchars($nombreRestUser); ?>
+                    </h3>
+                    <p class="pgs-rest-sub">
+                      This information is linked because employee CC and user employee ID match.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pgs-rest-number" title="Rest days available">
+                  <strong><?php echo $diasDescanso; ?></strong>
+                  <span><?php echo ($diasDescanso == 1) ? 'day' : 'days'; ?></span>
+                </div>
+              </div>
+
+              <div class="pgs-rest-foot">
+                <?php if ($employeeIdRest !== ''): ?>
+                  <span class="pgs-rest-mini">
+                    <i class="fa fa-id-card-o"></i>
+                    Employee ID: <?php echo htmlspecialchars($employeeIdRest); ?>
+                  </span>
+                <?php endif; ?>
+
+                <span class="pgs-rest-mini">
+                  <i class="fa fa-database"></i>
+                  Updated from database
+                </span>
+              </div>
+            </div>
+          </div>
+        <?php endif; ?>
+
 
         <!-- ✅ Units Grid -->
         <div class="row pgs-grid">

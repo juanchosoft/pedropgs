@@ -68,6 +68,7 @@ var USUARIO = {
             $("#apellido").val(res.apellido).trigger("change");
             $("#celular").val(res.celular).trigger("change");
             $("#tipo").val(res.tipo).trigger("change");
+            $("#employee_id").val(res.employee_id).trigger("change");
             $("#nickname").val(res.nickname).trigger("change");
             $("#nickname2").val(res.nickname).trigger("change");
             $("#hashpass").val("").trigger("change");
@@ -176,6 +177,7 @@ var USUARIO = {
         q.op = "pms_usrsave";
         q.id = $("#id").val();
         q.nombre = $("#nombre").val();
+        q.employee_id = $("#employee_id").val();
         q.apellido = $("#apellido").val();
         q.celular = $("#celular").val();
         q.nickname = $("#nickname").val();

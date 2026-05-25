@@ -172,6 +172,7 @@ class Usuario
         $id = isset($rqst['id']) ? intval($rqst['id']) : 0;
         $nickname = isset($rqst['nickname']) ? ($rqst['nickname']) : '';
         $hashpass = isset($rqst['hashpass']) ? ($rqst['hashpass']) : '';
+        $employee_id = isset($rqst['employee_id']) ? ($rqst['employee_id']) : '';
         $nombre = isset($rqst['nombre']) ? ($rqst['nombre']) : '';
         $apellido = isset($rqst['apellido']) ? ($rqst['apellido']) : '';
         $tipo = isset($rqst['tipo']) ? ($rqst['tipo']) : '';
@@ -196,6 +197,7 @@ class Usuario
                 $arrfieldscomma = array(
                     'nickname' => $nickname,
                     'hashpass' => $hashpass,
+                    'employee_id' => $employee_id,
                     'nombre' => $nombre,
                     'apellido' => $apellido,
                     'tipo' => $tipo,
@@ -227,11 +229,12 @@ class Usuario
         } else {
 
             if ($nombre != "" && $nickname != "") {
-                $q = "INSERT INTO " . $db->getTable('tec_usuarios') . " (dtcreate, nickname, hashpass, nombre, apellido,  tipo, tbl_unidad_id, img, habilitado) VALUES ( " . Util::date_now_server() . ", :nickname, :hashpass, :nombre, :apellido, :tipo, :tbl_unidad_id, :img, :habilitado)";
+                $q = "INSERT INTO " . $db->getTable('tec_usuarios') . " (dtcreate, nickname, hashpass, employee_id, nombre, apellido,  tipo, tbl_unidad_id, img, habilitado) VALUES ( " . Util::date_now_server() . ", :nickname, :hashpass, :employee_id, :nombre, :apellido, :tipo, :tbl_unidad_id, :img, :habilitado)";
                 $result = $pdo->prepare($q);
                 $arrparam = array(
                     ':nickname' => $nickname,
                     ':hashpass' => $hashpass,
+                    ':employee_id' => $employee_id,
                     ':nombre' => $nombre,
                     ':apellido' => $apellido,
                     ':tipo' => $tipo,
@@ -245,11 +248,12 @@ class Usuario
                     $arrjson = array('output' => array('valid' => true, 'response' => $pdo->lastInsertId()));
 
                     $q = "INSERT INTO " . $db->getTable('tec_employee') . " 
-                    (dtcreate, nombre, email, enable, tbl_unidad_id) VALUES 
-                    (" . Util::date_now_server() . ", :nombre, :email, :enable, :tbl_unidad_id)";
+                    (dtcreate, nombre,employee_id, email, enable, tbl_unidad_id) VALUES 
+                    (" . Util::date_now_server() . ", :nombre, :employee_id, :email, :enable, :tbl_unidad_id)";
                     $result = $pdo->prepare($q);
                     $arrparam = array(
                         ':nombre' => $nombre . " " . $apellido,
+                        ':employee_id' => $employee_id,
                         ':email' => $nickname,
                         ':enable' => 'si',
                         ':tbl_unidad_id' => $tbl_unidad_id,
