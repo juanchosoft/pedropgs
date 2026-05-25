@@ -452,22 +452,22 @@ class Util
 
     public static function error_general($description = '')
     {
-        return array('output' => array('valid' => false, 'response' => array('code' => '000', 'content' => ' Ha ocurrido un error. ' . $description)));
+        return array('output' => array('valid' => false, 'response' => array('code' => '000', 'content' => ' An error has occurred. ' . $description)));
     }
 
     public static function error_general2()
     {
-        return array('output' => array('valid' => false, 'response' => array('code' => '0000', 'content' => ' Ha ocurrido un error 2. ')));
+        return array('output' => array('valid' => false, 'response' => array('code' => '0000', 'content' => ' An error has occurred 2. ')));
     }
 
     public static function info_general($description = '')
     {
-        return array('output' => array('valid' => false, 'response' => array('code' => '0000', 'content' => ' Importante a tener en cuenta. ' . $description)));
+        return array('output' => array('valid' => false, 'response' => array('code' => '0000', 'content' => ' Important to keep in mind. ' . $description)));
     }
 
     public static function error_no_result()
     {
-        return array('output' => array('valid' => false, 'response' => array('code' => '104', 'content' => ' Sin resultados.')));
+        return array('output' => array('valid' => false, 'response' => array('code' => '104', 'content' => ' No results found.')));
     }
 
     public static function error_no_credits()
@@ -479,10 +479,10 @@ class Util
     {
         return array('output' => array('valid' => false, 'response' => array('code' => '106', 'content' => ' El correo ingresado ya lo utiliza otro usuario.')));
     }
-
+    
     public static function error_wrong_data_login()
     {
-        return array('output' => array('valid' => false, 'response' => array('code' => '107', 'content' => ' Usuario o Contraseña Incorrectos.')));
+        return array('output' => array('valid' => false, 'response' => array('code' => '107', 'content' => ' Incorrect username or password.')));
     }
 
     public static function error_wrong_email()
