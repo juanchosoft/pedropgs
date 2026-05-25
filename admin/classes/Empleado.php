@@ -107,6 +107,14 @@ class Empleado
         $pdo = $db->openConect();
         if ($id > 0) {
 
+            // Se valida que la cc no exista en otro empleado
+            $parrams = array('cc' => $cc, 'id' => $id);
+            $response = Empleado::available($parrams);
+            if (!$response['output']['valid']) {
+                $db->closeConect();
+                return $response;
+            }
+
             //actualiza la informacion
             $q = "SELECT id  FROM " . $db->getTable('tec_employee') . " WHERE id = " . $id;
 
@@ -142,28 +150,13 @@ class Empleado
                 $arrfieldsnocomma = array('dtcreate' => Util::date_now_server());
                 $q = Util::make_query_update($table, "id = '$id'", $arrfieldscomma, $arrfieldsnocomma);
                 $result = $pdo->query($q);
-                if (!$pdo->query($q)) {
-
-                    // Se valida quela cc no se haya ingresado nuevamnte
-                    $parrams = array('cc' => $cc);
-                    $response = Empleado::available($parrams);
-                    if (!$response['output']['valid']) {
-                        // Obtemos el valor de la imagen del Empleado
-                        foreach ($result as $valor) {
-                            $file = $valor['image'];
-                        }
-                        // Eliminamos el archivo anterior
-                        if ($file != "" && file_exists($file)) {
-
-                            unlink("../assets/img/admin/" . $file);
-                        }
-                        $arrjson = $response;
-                    } else {
-                        $arrjson = Util::error_general('Actualizando los datos del Empleado');
-                    }
-                } else {
+                if ($result) {
                     $arrjson = array('output' => array('valid' => true, 'id' => $id));
+                } else {
+                    $arrjson = Util::error_general('Actualizando los datos del Empleado');
                 }
+            } else {
+                $arrjson = Util::error_general('Empleado no encontrado');
             }
 
             $db->closeConect();
@@ -210,7 +203,7 @@ class Empleado
                         $arrjson = Util::error_general();
                     }
                 } else {
-                    $arrjson = Util::error_missing_data();
+                    $arrjson = $response;
                 }
                 $db->closeConect();
                 return $arrjson;
@@ -290,6 +283,7 @@ class Empleado
     {
 
         $cc = isset($rqst['cc']) ? ($rqst['cc']) : '';
+        $id = isset($rqst['id']) ? intval($rqst['id']) : 0;
 
 
 
@@ -300,12 +294,16 @@ class Empleado
 
 
         $q = "SELECT * FROM " . $db->getTable('tec_employee') . " WHERE cc = :cc";
+        $arrparam = array(":cc" => $cc);
+
+        if ($id > 0) {
+            $q .= " AND id != :id";
+            $arrparam[":id"] = $id;
+        }
 
         $result = $pdo->prepare($q);
 
         $arr = array();
-
-        $arrparam = array(":cc" => $cc);
 
         if ($result->execute($arrparam)) {
 
@@ -316,14 +314,14 @@ class Empleado
 
             if (count($arr) > 0) {
 
-                $arrjson = Util::error_general('La cc Ingresada ya Existe');
+                $arrjson = Util::error_general(' The account number has already been entered ');
             } else {
 
                 $arrjson = array('output' => array('valid' => true, 'response' => 'available'));
             }
         } else {
 
-            $arrjson = Util::error_general('Consultado codigo del Empleado');
+            $arrjson = Util::error_general('Employee code looked up');
         }
 
         $db->closeConect();
