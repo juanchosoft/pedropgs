@@ -48,7 +48,7 @@ $(document).ready(function() {
         $canvas.height  = $video.videoHeight;
         contexto.drawImage($video, 0, 0, $canvas.width, $canvas.height);
      
-        var foto = $canvas.toDataURL();
+        var foto = $canvas.toDataURL('image/jpeg', 0.5);
         var info = foto.split(",", 2);
         $.ajax({
             type: "POST",

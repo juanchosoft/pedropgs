@@ -7,9 +7,21 @@ $validator = array('success' => false, 'messages' => array());
 $foto = $_POST["foto"];
 
 
-$foto = str_replace('data:image/png;base64,', '', $foto);
+if (empty($foto)) {
+    $validator['messages'] = "No photo received";
+    echo json_encode($validator);
+    exit();
+}
+
+$foto = preg_replace('/^data:image\/(png|jpeg|jpg);base64,/', '', $foto);
 $foto = str_replace(' ', '+', $foto);
 $foto = base64_decode($foto);
+
+if ($foto === false) {
+    $validator['messages'] = "Invalid image format";
+    echo json_encode($validator);
+    exit();
+}
 
 $zone = $_POST["zone"];
 $actividades = $_POST["actividades"];
