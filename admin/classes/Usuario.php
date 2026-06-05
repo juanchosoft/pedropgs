@@ -24,7 +24,8 @@ class Usuario
             if ($id > 0) {
                 /*
                  * Cuando se consulta un usuario para editar,
-                 * también traemos los días de descanso desde tec_employee.
+                 * también traemos los días de descanso desde tec_employee
+                 * y las unidades asignadas desde la tabla pivote.
                  *
                  * Relación correcta:
                  * tec_usuarios.employee_id = tec_employee.cc
@@ -35,11 +36,15 @@ class Usuario
                         CASE 
                             WHEN u.employee_id IS NOT NULL AND u.employee_id <> '' THEN 'si'
                             ELSE 'no'
-                        END AS es_empleado
+                        END AS es_empleado,
+                        GROUP_CONCAT(uhu.tbl_unidades_id) AS unidades_ids
                       FROM " . $db->getTable('tec_usuarios') . " AS u
                       LEFT JOIN " . $db->getTable('tec_employee') . " AS e
                         ON e.cc = u.employee_id
+                      LEFT JOIN " . $db->getTable('tec_usuarios_has_tbl_unidades') . " AS uhu
+                        ON uhu.tec_usuarios_id = u.id
                       WHERE u.id = :id
+                      GROUP BY u.id
                       LIMIT 1";
 
                 $stmt = $pdo->prepare($q);
@@ -66,6 +71,15 @@ class Usuario
             }
 
             $arr = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Transform unidades_ids for the single-user edit case
+            if ($id > 0) {
+                foreach ($arr as &$row) {
+                    $row['unidades_ids'] = isset($row['unidades_ids']) && $row['unidades_ids'] ? explode(',', $row['unidades_ids']) : [];
+                    $row['unidades_ids'] = array_map('intval', $row['unidades_ids']);
+                }
+                unset($row);
+            }
 
             $arrjson = array(
                 'output' => array(
@@ -171,6 +185,29 @@ class Usuario
 
             $usuario['permisos'] = $arrassigned;
 
+            /*
+             * Fetch all assigned unidades from the pivot table.
+             */
+            $qUnid = "SELECT tbl_unidades_id 
+                      FROM " . $db->getTable('tec_usuarios_has_tbl_unidades') . " 
+                      WHERE tec_usuarios_id = :id 
+                      ORDER BY tbl_unidades_id ASC";
+
+            $stmtUnid = $pdo->prepare($qUnid);
+            $stmtUnid->execute([':id' => $id]);
+
+            $unidadIds = array();
+            foreach ($stmtUnid->fetchAll(PDO::FETCH_ASSOC) as $rowUnid) {
+                $unidadIds[] = intval($rowUnid['tbl_unidades_id']);
+            }
+
+            // Backward compat: if no pivot entries, use tbl_unidad_id from the user record
+            if (empty($unidadIds) && $tbl_unidad_id > 0) {
+                $unidadIds[] = $tbl_unidad_id;
+            }
+
+            $usuario['unidades'] = $unidadIds;
+
             $arr = array();
             $arr[] = $usuario;
 
@@ -211,7 +248,8 @@ class Usuario
                     'permisos' => $arrassigned,
                     'config' => $arr4,
                     'telefono_emergencia' => $telefono_emergencia,
-                    'unidad' => $unidad
+                    'unidad' => $unidad,
+                    'unidades' => $unidadIds
                 )
             );
 
@@ -228,12 +266,25 @@ class Usuario
         $id = isset($rqst['id']) ? intval($rqst['id']) : 0;
         $nickname = isset($rqst['nickname']) ? trim($rqst['nickname']) : '';
         $hashpass = isset($rqst['hashpass']) ? trim($rqst['hashpass']) : '';
-        $employee_id = isset($rqst['employee_id']) ? trim($rqst['employee_id']) : '';
+        $employee_id = isset($rqst['employee_id']) ? trim($rqst['employee_id']) : null;
+        $employee_id = $employee_id === '' ? null : $employee_id;
         $nombre = isset($rqst['nombre']) ? trim($rqst['nombre']) : '';
         $apellido = isset($rqst['apellido']) ? trim($rqst['apellido']) : '';
         $tipo = isset($rqst['tipo']) ? trim($rqst['tipo']) : '';
-        $tbl_unidad_id = isset($rqst['tbl_unidad_id']) ? intval($rqst['tbl_unidad_id']) : 0;
+        $tbl_unidad_id_raw = isset($rqst['tbl_unidad_id']) ? $rqst['tbl_unidad_id'] : [];
         $habilitado = isset($rqst['habilitado']) ? trim($rqst['habilitado']) : '';
+
+        // Handle single or multiple unidad IDs
+        $unidadIds = [];
+        if (is_array($tbl_unidad_id_raw)) {
+            $unidadIds = array_values(array_filter(array_map('intval', $tbl_unidad_id_raw), function($v) { return $v > 0; }));
+            $tbl_unidad_id = !empty($unidadIds) ? $unidadIds[0] : 0;
+        } else {
+            $tbl_unidad_id = intval($tbl_unidad_id_raw);
+            if ($tbl_unidad_id > 0) {
+                $unidadIds[] = $tbl_unidad_id;
+            }
+        }
 
         $imgNueva = isset($_SESSION['file']['nombrearchivo']) ? trim($_SESSION['file']['nombrearchivo']) : '';
 
@@ -317,6 +368,11 @@ class Usuario
                 if ($employee_id != "") {
                     self::syncEmployee($pdo, $db, $employee_id, $nombre, $apellido, $nickname, $tbl_unidad_id);
                 }
+
+                /*
+                 * Sincroniza la tabla pivote de unidades asignadas.
+                 */
+                self::syncUnidades($pdo, $db, $id, $unidadIds);
 
                 /*
                  * Elimina imagen anterior solo si se subió una nueva diferente.
@@ -412,6 +468,11 @@ class Usuario
                 self::syncEmployee($pdo, $db, $employee_id, $nombre, $apellido, $nickname, $tbl_unidad_id);
             }
 
+            /*
+             * Sincroniza la tabla pivote de unidades asignadas.
+             */
+            self::syncUnidades($pdo, $db, $usuarioId, $unidadIds);
+
             $arrjson = array(
                 'output' => array(
                     'valid' => true,
@@ -493,7 +554,21 @@ class Usuario
                         email, 
                         enable, 
                         tbl_unidad_id,
-                        dias_descanso
+                        dias_descanso,
+                        image,
+                        document_id,
+                        genero,
+                        celular,
+                        fecha_ingreso,
+                        fecha_nacimiento,
+                        lugar_nacimiento,
+                        direccion,
+                        estado_civil,
+                        rh,
+                        camisa,
+                        pantalon,
+                        calzado,
+                        entrega_uniforme
                     ) 
                     VALUES 
                     (
@@ -503,7 +578,21 @@ class Usuario
                         :email, 
                         :enable, 
                         :tbl_unidad_id,
-                        :dias_descanso
+                        :dias_descanso,
+                        :image,
+                        :document_id,
+                        :genero,
+                        :celular,
+                        :fecha_ingreso,
+                        :fecha_nacimiento,
+                        :lugar_nacimiento,
+                        :direccion,
+                        :estado_civil,
+                        :rh,
+                        :camisa,
+                        :pantalon,
+                        :calzado,
+                        :entrega_uniforme
                     )";
 
         $stmtInsert = $pdo->prepare($qInsert);
@@ -514,8 +603,35 @@ class Usuario
             ':email' => $email,
             ':enable' => 'si',
             ':tbl_unidad_id' => $tbl_unidad_id,
-            ':dias_descanso' => 0
+            ':dias_descanso' => 0,
+            ':image' => '',
+            ':document_id' => 1,
+            ':genero' => 'si',
+            ':celular' => '',
+            ':fecha_ingreso' => date('Y-m-d'),
+            ':fecha_nacimiento' => date('Y-m-d'),
+            ':lugar_nacimiento' => '',
+            ':direccion' => '',
+            ':estado_civil' => '',
+            ':rh' => '',
+            ':camisa' => '',
+            ':pantalon' => '',
+            ':calzado' => '',
+            ':entrega_uniforme' => ''
         ]);
+    }
+
+    private static function syncUnidades($pdo, $db, $usuarioId, array $unidadIds)
+    {
+        $qDel = "DELETE FROM " . $db->getTable('tec_usuarios_has_tbl_unidades') . " WHERE tec_usuarios_id = :uid";
+        $stmtDel = $pdo->prepare($qDel);
+        $stmtDel->execute([':uid' => $usuarioId]);
+
+        foreach ($unidadIds as $unid) {
+            $qIns = "INSERT INTO " . $db->getTable('tec_usuarios_has_tbl_unidades') . " (tec_usuarios_id, tbl_unidades_id) VALUES (:uid, :unid)";
+            $stmtIns = $pdo->prepare($qIns);
+            $stmtIns->execute([':uid' => $usuarioId, ':unid' => $unid]);
+        }
     }
 
     public static function delete($rqst)
@@ -536,6 +652,12 @@ class Usuario
 
             $stmt1 = $pdo->prepare($q1);
             $stmt1->execute([':id' => $id]);
+
+            $qUnid = "DELETE FROM " . $db->getTable('tec_usuarios_has_tbl_unidades') . " 
+                      WHERE tec_usuarios_id = :id";
+
+            $stmtUnid = $pdo->prepare($qUnid);
+            $stmtUnid->execute([':id' => $id]);
 
             $q = "DELETE FROM " . $db->getTable('tec_usuarios') . " 
                   WHERE id = :id";

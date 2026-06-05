@@ -24,7 +24,14 @@ try {
 }
 
 $unidad = '';
-try { $unidad = (string)SessionData::getUnidadUser(); } catch(Throwable $e){ $unidad = ''; }
+$unidadIds = [];
+try {
+    $unidad = (string)SessionData::getUnidadUser();
+    $unidadIds = SessionData::getUnidadesUser();
+} catch(Throwable $e) {
+    $unidad = '';
+    $unidadIds = [];
+}
 $unidadInt = (int)$unidad;
 
 try {
@@ -178,11 +185,17 @@ if ($userTable && $userCol && $userNameCol) {
 $params = [];
 $where = [];
 
-if ($unidadCol && ($unidad !== '' || $unidadInt > 0)) {
-  // filtro flexible: intenta por string y por int
-  $where[] = "(c.`$unidadCol` = ? OR c.`$unidadCol` = ?)";
-  $params[] = $unidad;
-  $params[] = $unidadInt;
+if ($unidadCol) {
+  // Backward compat: for SuperAdmin, no filter; for others filter by assigned unidades
+  if (!empty($unidadIds)) {
+    $placeholders = implode(',', array_fill(0, count($unidadIds), '?'));
+    $where[] = "c.`$unidadCol` IN ($placeholders)";
+    $params = array_merge($params, $unidadIds);
+  } elseif ($unidadInt > 0) {
+    $where[] = "(c.`$unidadCol` = ? OR c.`$unidadCol` = ?)";
+    $params[] = $unidad;
+    $params[] = $unidadInt;
+  }
 }
 
 if ($where) $sql .= "WHERE " . implode(" AND ", $where) . "\n";

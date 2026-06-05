@@ -73,7 +73,11 @@ var USUARIO = {
             $("#nickname2").val(res.nickname).trigger("change");
             $("#hashpass").val("").trigger("change");
             $("#hashpass1").val("").trigger("change");
-            $("#tbl_unidad_id").val(res.tbl_unidad_id).trigger("change");
+            // Set multiple unidades on the Select2 multi-select
+            var unidadIds = res.unidades_ids && res.unidades_ids.length > 0
+                ? res.unidades_ids
+                : (res.tbl_unidad_id > 0 ? [res.tbl_unidad_id] : []);
+            $("#tbl_unidad_id").val(unidadIds).trigger("change");
             $("#habilitado").val(res.habilitado).trigger("change");
             $("#tipo").val(res.tipo).trigger("change");
             $("#myModal").modal();

@@ -13,15 +13,6 @@ $enable = SessionData::getPermission(19);
 
 if (!$view) { require 'permiso_denegado.php'; }
 
-// Categories option
-$arrCategorias = Categoria::getAll(null);
-$isvalidCat = $arrCategorias['output']['valid'];
-$arrCategorias = $arrCategorias['output']['response'];
-$optionCategoria = '<option value="seleccione">Seleccione...</option>';
-foreach ($arrCategorias as $val) {
-  $optionCategoria .= "<option value='" . $val['id'] . "'>" . $val['name'] . "</option>";
-}
-
 // Units options (original logic preserved)
 $arrUnidades = Unidades::getAll(null);
 $isvalidUni = $arrUnidades['output']['valid'];
@@ -38,8 +29,9 @@ $arrUnidades = $arrUnidades['output']['response'];
 
 $optionUnidades = '<option value="seleccione">Seleccione...</option>';
 
-$userUnidad = SessionData::getUnidadUser();
-$userType   = SessionData::getUserType();
+$userUnidad   = SessionData::getUnidadUser();
+$userUnidades = SessionData::getUnidadesUser();
+$userType     = SessionData::getUserType();
 
 if ($isvalidCat) {
   foreach ($arrUnidades as $val) {
@@ -47,7 +39,7 @@ if ($isvalidCat) {
       $optionUnidades .= "<option value='" . htmlspecialchars($val['id']) . "'>" . htmlspecialchars($val['nombre']) . "</option>";
       continue;
     }
-    if (($userType == Util::Manager() || $userType == Util::Staff()) && $userUnidad == $val['id']) {
+    if (($userType == Util::Manager() || $userType == Util::Staff()) && in_array($val['id'], $userUnidades)) {
       $optionUnidades .= "<option value='" . htmlspecialchars($val['id']) . "'>" . htmlspecialchars($val['nombre']) . "</option>";
     }
   }

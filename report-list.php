@@ -24,8 +24,9 @@ $arr = Report::getAll(null);
 $isvalid = $arr['output']['valid'];
 $arrReportData = [];
 
-$userUnidad = SessionData::getUnidadUser(); // Obtener la unidad del usuario
-$userType = SessionData::getUserType(); // Obtener el tipo de usuario
+$userUnidad   = SessionData::getUnidadUser();
+$userUnidades = SessionData::getUnidadesUser();
+$userType     = SessionData::getUserType();
 
 if ($isvalid) {
     $arr = $arr['output']['response'];
@@ -38,7 +39,7 @@ if ($isvalid) {
         }
 
         // Manager y Staff ven solo los reportes de su unidad
-        if (($userType == Util::Manager() || $userType == Util::Staff()) && $userUnidad == $report['tbl_unidad_id']) {
+        if (($userType == Util::Manager() || $userType == Util::Staff()) && in_array($report['tbl_unidad_id'], $userUnidades)) {
             $arrReportData[] = $report;
         }
     }

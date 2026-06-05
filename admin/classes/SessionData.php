@@ -123,6 +123,18 @@ class SessionData
         }
     }
 
+    public static function getUnidadesUser()
+    {
+        if (isset($_SESSION['session_user']) && isset($_SESSION['session_user']['unidades'])) {
+
+            return $_SESSION['session_user']['unidades'];
+        }
+
+        // Backward compat: if no unidades array, return single unidad as array
+        $single = self::getUnidadUser();
+        return $single > 0 ? [$single] : [];
+    }
+
 
 
     public static function getAvatar()

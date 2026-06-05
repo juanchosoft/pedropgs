@@ -908,8 +908,9 @@
    </li>
 
    <?php
-   $userUnidad = SessionData::getUnidadUser(); // Obtener la unidad del usuario
-   $userType = SessionData::getUserType(); // Obtener el tipo de usuario
+   $userUnidad   = SessionData::getUnidadUser();
+   $userUnidades = SessionData::getUnidadesUser();
+   $userType     = SessionData::getUserType();
 
    // Determinar si el usuario puede ver todas las opciones o solo algunas
    $esSuperAdmin = ($userType == Util::SuperAdmin());
@@ -937,11 +938,11 @@
             <li><a href="./check_list.php">Check List Report</a></li>
          <?php endif; ?>
 
-         <?php if (($esSuperAdmin || $userUnidad == 7) && SessionData::getPermission(21)): ?>
+         <?php if (($esSuperAdmin || in_array(7, $userUnidades)) && SessionData::getPermission(21)): ?>
             <li><a href="./check_list_villasol.php">Check List Report Villasol</a></li>
          <?php endif; ?>
 
-         <?php if (($esSuperAdmin || $userUnidad == 7) && SessionData::getPermission(22)): ?>
+         <?php if (($esSuperAdmin || in_array(7, $userUnidades)) && SessionData::getPermission(22)): ?>
             <li><a href="./check_report_list_villasol.php">Show Check List Report Villasol</a></li>
          <?php endif; ?>
 

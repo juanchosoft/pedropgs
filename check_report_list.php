@@ -349,18 +349,18 @@ $modulo = 'Checklist Reports';
                         <?php
                           $c = is_array($arr) ? count($arr) : 0;
 
-                          $userUnidad = SessionData::getUnidadUser();
-                          $userType   = SessionData::getUserType();
+                          $userUnidad   = SessionData::getUnidadUser();
+                          $userUnidades = SessionData::getUnidadesUser();
+                          $userType     = SessionData::getUserType();
 
                           if ($isvalid && $c > 0) {
                             for ($i = 0; $i < $c; $i++) {
                               $unidadId = isset($arr[$i]['tbl_unidad_id']) ? intval($arr[$i]['tbl_unidad_id']) : null;
-                              $userUnidadInt = intval($userUnidad);
 
                               $mostrarUnidad = (
                                 $userType == Util::SuperAdmin() ||
-                                ($userType == Util::Manager() && $userUnidadInt === $unidadId) ||
-                                ($userType == Util::Staff()   && $userUnidadInt === $unidadId)
+                                ($userType == Util::Manager() && in_array($unidadId, $userUnidades)) ||
+                                ($userType == Util::Staff()   && in_array($unidadId, $userUnidades))
                               );
 
                               if ($mostrarUnidad):

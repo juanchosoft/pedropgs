@@ -32,6 +32,7 @@ if (isset($_SESSION['session_user'])) {
         $_SESSION['session_user']['config'] = $res['output']['config'];
         $_SESSION['session_user']['telefono_emergencia'] = $res['output']['telefono_emergencia'];
         $_SESSION['session_user']['unidad'] = $res['output']['unidad'];
+        $_SESSION['session_user']['unidades'] = isset($res['output']['unidades']) ? $res['output']['unidades'] : [];
         ?>
         <script>
           window.location = 'main.php';

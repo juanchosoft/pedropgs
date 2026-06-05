@@ -19,7 +19,7 @@ $arrUnidades = Unidades::getAll(null);
 $isvalidUni  = $arrUnidades['output']['valid'];
 $arrUnidades = $arrUnidades['output']['response'];
 
-$optionUnidades = '<option value="selecct">Select...</option>';
+$optionUnidades = '';
 foreach ($arrUnidades as $val) {
   $optionUnidades .= "<option value='" . $val['id'] . "'>" . $val['nombre'] . "</option>";
 }
@@ -1466,9 +1466,10 @@ $modulo = 'Users';
               <div class="col-sm-6">
                 <div class="form-group">
                   <label class="bmd-label-floating">HOA designated (Name) <b class="errLbl">*</b></label>
-                  <select class="form-control" id="tbl_unidad_id" name="tbl_unidad_id">
+                  <select class="form-control" id="tbl_unidad_id" name="tbl_unidad_id[]" multiple>
                     <?php echo $optionUnidades; ?>
                   </select>
+                  <small class="form-text text-muted">You can select one or multiple units.</small>
                 </div>
               </div>
 
@@ -1899,6 +1900,16 @@ $modulo = 'Users';
       window.PGS_setEmployeeMode = setEmployeeMode;
       window.PGS_syncEmployeeModeFromValue = syncEmployeeModeFromValue;
       window.PGS_updateRestDays = updateRestDays;
+
+      // Initialize Select2 for multi-unidad selection
+      if (window.jQuery && jQuery.fn.select2) {
+        jQuery('#tbl_unidad_id').select2({
+          placeholder: 'Select one or more units…',
+          allowClear: true,
+          width: '100%',
+          dropdownParent: jQuery('#myModal')
+        });
+      }
     })();
   </script>
 

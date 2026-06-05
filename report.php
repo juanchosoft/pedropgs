@@ -28,8 +28,9 @@ $arrRequerimiento = $arrRequerimiento['output']['response'];
 
 $optionRequerimiento = '<option value="selecct">Select...</option>';
 
-$userUnidad = SessionData::getUnidadUser();
-$userType   = SessionData::getUserType();
+$userUnidad   = SessionData::getUnidadUser();
+$userUnidades = SessionData::getUnidadesUser();
+$userType     = SessionData::getUserType();
 
 if ($isvalidUni) {
   foreach ($arrRequerimiento as $val) {
@@ -37,7 +38,7 @@ if ($isvalidUni) {
       $optionRequerimiento .= "<option value='" . htmlspecialchars($val['id']) . "'>" . htmlspecialchars($val['nombre']) . "</option>";
       continue;
     }
-    if (($userType == Util::Manager() || $userType == Util::Staff()) && $userUnidad == $val['id']) {
+    if (($userType == Util::Manager() || $userType == Util::Staff()) && in_array($val['id'], $userUnidades)) {
       $optionRequerimiento .= "<option value='" . htmlspecialchars($val['id']) . "'>" . htmlspecialchars($val['nombre']) . "</option>";
     }
   }

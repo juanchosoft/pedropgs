@@ -19,16 +19,17 @@ $arrUnidades = $arrUnidades['output']['response'];
 
 $optionUnidades = '<option value="seleccione">Select...</option>';
 
-$userUnidad = intval(SessionData::getUnidadUser());
-$userType   = SessionData::getUserType();
+$userUnidad   = intval(SessionData::getUnidadUser());
+$userUnidades = SessionData::getUnidadesUser();
+$userType     = SessionData::getUserType();
 
 foreach ($arrUnidades as $val) {
   $unidadId = intval($val['id']);
 
   $mostrarUnidad = (
     $userType == Util::SuperAdmin() ||
-    ($userType == Util::Manager() && $userUnidad === $unidadId) ||
-    ($userType == Util::Staff()   && $userUnidad === $unidadId)
+    ($userType == Util::Manager() && in_array($unidadId, $userUnidades)) ||
+    ($userType == Util::Staff()   && in_array($unidadId, $userUnidades))
   );
 
   if ($mostrarUnidad) {

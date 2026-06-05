@@ -1212,15 +1212,16 @@ $arrUnidadesData = $arrUnidades;
         <div class="row pgs-grid">
           <?php if ($isvalid): ?>
             <?php
-              $userUnidad = SessionData::getUnidadUser();
-              $userType   = SessionData::getUserType();
+              $userUnidad   = SessionData::getUnidadUser();
+              $userUnidades = SessionData::getUnidadesUser();
+              $userType     = SessionData::getUserType();
             ?>
             <?php foreach ($arrUnidades as $unidad): ?>
               <?php
                 $mostrarUnidad = (
                   $userType == Util::SuperAdmin() ||
-                  ($userType == Util::Manager() && $userUnidad == $unidad['id']) ||
-                  ($userType == Util::Staff() && $userUnidad == $unidad['id'])
+                  ($userType == Util::Manager() && in_array($unidad['id'], $userUnidades)) ||
+                  ($userType == Util::Staff() && in_array($unidad['id'], $userUnidades))
                 );
               ?>
               <?php if ($mostrarUnidad): ?>
