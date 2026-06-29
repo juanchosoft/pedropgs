@@ -327,6 +327,14 @@
   background: linear-gradient(180deg, transparent, rgba(0,0,0,.22)) !important;
 }
 
+.sidebar-footer a{
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.sidebar-footer a:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 32px rgba(225,29,46,.26);
+}
+
 /* Estilos para menú mini */
 [data-sidebar-style="mini"] #menu{
   padding-left: 8px !important;
@@ -1007,6 +1015,18 @@
    <?php endif; ?>
 
 </ul>
+
+<div class="sidebar-footer">
+  <a href="logout.php" style="
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:12px 14px; border-radius:16px;
+    background:linear-gradient(135deg, #e11d2e, #ff2a3d);
+    border:none; color:#fff !important; font-weight:950;
+    text-decoration:none !important;
+  ">
+    <i class="fa fa-power-off"></i> Logout
+  </a>
+</div>
 
 <script>
 /* =========================================================
