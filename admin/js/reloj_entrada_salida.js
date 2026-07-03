@@ -1,7 +1,9 @@
 $(document).ready(function() {
-    init();    
+    init();
+    setInterval(requestLocation, 30000);
 });
 var q;
+var watchId = null;
 
 const regexLat = /^(-?[1-8]?\d(?:\.\d{1,18})?|90(?:\.0{1,18})?)$/;
 const regexLon = /^(-?(?:1[0-7]|[1-9])?\d(?:\.\d{1,18})?|180(?:\.0{1,18})?)$/;
@@ -14,7 +16,19 @@ function check_lat_lon(lat, lon) {
 
 function init() {
     q = {};
-    navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+    requestLocation();
+}
+
+function requestLocation() {
+    var options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+    };
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+    }
+    watchId = navigator.geolocation.watchPosition(successCallback, errorCallback, options);
 }
 
 var RELOJENTRADASALIDA = {
@@ -25,16 +39,19 @@ var RELOJENTRADASALIDA = {
         var coords = $("#coords").val();
 
         if (coords == '') {
+            requestLocation();
             messageErrorLocation();
             bValid = false;
             return;
         }else{
             const arrCoords = coords.split(',');
             if (arrCoords.length < 2 || arrCoords.length > 2) {
+                requestLocation();
                 swal("Error", 'La ubicación es erronea.', "error");
                 bValid = false;
                 return;
             }else if(!check_lat_lon(arrCoords[0],arrCoords[1])){
+                requestLocation();
                 swal("Error", 'La ubicación es erronea.', "error");  
                 bValid = false; 
                 return;             

@@ -381,7 +381,7 @@ $modulo = 'Record Time';
                                   >
 
                                   <input readonly="yes" class="campo2a" type="hidden" name="fecha" id="fecha" value="<?= $fecha_actual ?>">
-                                  <input readonly="yes" class="coords" type="hidden" name="coords" id="coords" value="<?= $fecha_actual ?>">
+                                  <input readonly="yes" class="coords" type="hidden" name="coords" id="coords" value="">
                                 </div>
                               </div>
 
