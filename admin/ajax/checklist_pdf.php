@@ -276,10 +276,10 @@ function qaCardHTML(string $question, string $statusText, string $statusColor, s
 /* ================= PDF ================= */
 class MYPDF extends TCPDF
 {
-    public ?string $logoPath = null;
-    public string $brand = 'PGS Centrum • Inspection & Compliance';
-    public string $rightMeta = '';
-    public bool $watermark = true;
+    public $logoPath = null;
+    public $brand = 'PGS Centrum • Inspection & Compliance';
+    public $rightMeta = '';
+    public $watermark = true;
 
     public function Header()
     {
