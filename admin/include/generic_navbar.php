@@ -987,7 +987,8 @@
       </li>
    <?php endif; ?>
 
-   <?php if (($esSuperAdmin  || $esManagerOStaff) && SessionData::getPermission(33)): ?>
+   <?php if (SessionData::getPermission(33)): ?>
+      <?php if ($esSuperAdmin || $userType == Util::Manager()): ?>
       <li>
          <a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false">
             <i class="fa fa-address-card-o"></i>
@@ -1000,6 +1001,14 @@
             <li><a href="./uniformes.php">Uniforms</a></li>
          </ul>
       </li>
+      <?php else: ?>
+      <li>
+         <a href="./reloj.php" class="ai-icon" aria-expanded="false">
+            <i class="fa fa-address-card-o"></i>
+            <span class="nav-text">Record time</span>
+         </a>
+      </li>
+      <?php endif; ?>
    <?php endif; ?>
 
    <?php if (SessionData::getPermission(40)): ?>

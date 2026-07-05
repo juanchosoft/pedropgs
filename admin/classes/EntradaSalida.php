@@ -8,8 +8,9 @@ class EntradaSalida
 
     public static function save($rqst)
     {
+        date_default_timezone_set('America/Bogota');
         $cc = isset($rqst['cc']) ? intval($rqst['cc']) : 0;
-        $fecha = $rqst['fecha'] ?? '';
+        $fecha = date("Y-m-d H:i:s");
         $coords = $rqst['coords'] ?? '';
         if (empty($coords) || $coords === '0,0') {
             $coords = self::getCoordsByIP();
