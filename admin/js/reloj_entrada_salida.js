@@ -1,72 +1,93 @@
 $(document).ready(function() {
-    init();
-    setInterval(requestLocation, 30000);
+    q = {};
+    $("#cc").on("click touchstart focus", function() {
+        requestLocation();
+    });
 });
 var q;
-var watchId = null;
-
-const regexLat = /^(-?[1-8]?\d(?:\.\d{1,18})?|90(?:\.0{1,18})?)$/;
-const regexLon = /^(-?(?:1[0-7]|[1-9])?\d(?:\.\d{1,18})?|180(?:\.0{1,18})?)$/;
-
-function check_lat_lon(lat, lon) {
-  let validLat = regexLat.test(lat);
-  let validLon = regexLon.test(lon);
-  return validLat && validLon;
-}
-
-function init() {
-    q = {};
-    requestLocation();
-}
+var locationPending = false;
 
 function requestLocation() {
-    var options = {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-    };
-    if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
+    if (locationPending) return;
+    locationPending = true;
+    $("#coords").val("");
+    if (!navigator.geolocation) {
+        getLocationByIP();
+        return;
     }
-    watchId = navigator.geolocation.watchPosition(successCallback, errorCallback, options);
+    navigator.geolocation.getCurrentPosition(function(position) {
+        locationPending = false;
+        $("#coords").val(position.coords.latitude+","+position.coords.longitude);
+        tryAutoValidate();
+    }, function() {
+        locationPending = false;
+        getLocationByIP();
+    }, {
+        enableHighAccuracy: true,
+        timeout: 3000,
+        maximumAge: 60000
+    });
+    setTimeout(function() {
+        if (locationPending) {
+            locationPending = false;
+            getLocationByIP();
+        }
+    }, 2000);
+}
+
+function getLocationByIP() {
+    $.getJSON('./admin/ajax/get_location.php', function(data) {
+        if (data.lat && data.lon) {
+            $("#coords").val(data.lat+","+data.lon);
+            tryAutoValidate();
+        }
+    });
+}
+
+function tryAutoValidate() {
+    if ($("#cc").val() != "" && $("#coords").val() != "" && $("#coords").val() != "0,0") {
+        RELOJENTRADASALIDA.validateEntradaSalida();
+    }
 }
 
 var RELOJENTRADASALIDA = {
     validate() {
-        var bValid = true;
-        var msj = 'Recuerde que todos los campos son obligatorios.';
-
         var coords = $("#coords").val();
-
-        if (coords == '') {
-            requestLocation();
-            messageErrorLocation();
-            bValid = false;
+        if ($("#cc").val() == "" || $("#fecha").val() == "") {
+            swal("Error", 'Recuerde que todos los campos son obligatorios.', "error");
             return;
-        }else{
-            const arrCoords = coords.split(',');
-            if (arrCoords.length < 2 || arrCoords.length > 2) {
+        }
+        if (!coords || coords == '0,0') {
+            if ($("#cc").val() != "") {
                 requestLocation();
-                swal("Error", 'La ubicación es erronea.', "error");
-                bValid = false;
-                return;
-            }else if(!check_lat_lon(arrCoords[0],arrCoords[1])){
-                requestLocation();
-                swal("Error", 'La ubicación es erronea.', "error");  
-                bValid = false; 
-                return;             
+                var check = function() {
+                    var c = $("#coords").val();
+                    if (c && c != '0,0') {
+                        RELOJENTRADASALIDA.validateEntradaSalida();
+                    } else {
+                        setTimeout(function() {
+                            var c2 = $("#coords").val();
+                            if (c2 && c2 != '0,0') {
+                                RELOJENTRADASALIDA.validateEntradaSalida();
+                            } else {
+                                requestLocation();
+                                setTimeout(function() {
+                                    var c3 = $("#coords").val();
+                                    if (c3 && c3 != '0,0') {
+                                        RELOJENTRADASALIDA.validateEntradaSalida();
+                                    } else {
+                                        swal("Location required", "Could not obtain your location. Check that location is enabled and try again.", "error");
+                                    }
+                                }, 3000);
+                            }
+                        }, 3000);
+                    }
+                };
+                setTimeout(check, 1000);
             }
-        }
-
-        if ($("#cc").val() == "" ||
-            $("#fecha").val() == "") {
-            bValid = false;
-            swal("Error", msj, "error");
             return;
         }
-        if (bValid) {
-            RELOJENTRADASALIDA.validateEntradaSalida();
-        }
+        RELOJENTRADASALIDA.validateEntradaSalida();
     },
     validateEntradaSalida: function () {
         q = {};
@@ -80,30 +101,11 @@ var RELOJENTRADASALIDA = {
         UTIL.cursorNormal();
         if (data.output.valid) {
             $("#cc").val('');
-            $("fecha").val('');
-            $("coords").val('');
+            $("#fecha").val('');
+            $("#coords").val('');
             swal("Important", data.output.response, "success");
-                    // setTimeout(function () {
-                    //     window.location = 'reloj.php';
-                    // }, 4500);
         } else {
             swal("Missing information", data.output.response.content, "error");
         }
     }
 }
-
-function messageErrorLocation(){
-    swal("Error", 'La ubicación es requerida, por favor permita acceder a su ubicación.', "error");
-}
-
-const successCallback = (position) => {
-    var coordsFinal = position.coords.latitude+","+position.coords.longitude;
-    $("#coords").val(coordsFinal);
-    console.log(position)
-};
-
-const errorCallback = (error) => {
-    $("#coords").val(""); 
-    messageErrorLocation();
-};
-

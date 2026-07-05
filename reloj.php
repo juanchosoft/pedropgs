@@ -286,7 +286,7 @@ $modulo = 'Record Time';
     </div>
   </div>
 
-  <?php include './admin/include/menu_movil_vistas.php'; ?>
+
   <div id="main-wrapper">
     <?php include './admin/include/generic_header.php'; ?>
 
