@@ -222,6 +222,31 @@ $modulo = 'Record Time';
       transform: translateY(-1px);
     }
 
+    .btn-send-id{
+      border-radius: 16px !important;
+      padding: 14px 28px !important;
+      font-weight: 1000;
+      font-size: 16px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--brand), var(--brand2));
+      border: none;
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(225,6,0,.25);
+      transition: box-shadow .15s ease, transform .12s ease;
+      cursor: pointer;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+    .btn-send-id:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 18px 40px rgba(225,6,0,.35);
+    }
+    .btn-send-id:active{
+      transform: translateY(0);
+      box-shadow: 0 6px 14px rgba(225,6,0,.20);
+    }
+
     /* Side panel (tips / status) */
     .rt-kpis{
       display:grid;
@@ -370,15 +395,21 @@ $modulo = 'Record Time';
                                   <h2><span class="rt-badge">ID</span> REGISTER YOUR ID</h2>
                                   <p class="hint">Tip: You can scan a barcode/QR or type the ID number.</p>
 
-                                  <input
-                                    type="text"
-                                    autofocus="yes"
-                                    class="form-control"
-                                    name="cc"
-                                    id="cc"
-                                    placeholder="Enter your ID"
-                                    onKeyPress="return soloNumeros(event);"
-                                  >
+                                  <div style="display:flex;gap:10px;">
+                                    <input
+                                      type="text"
+                                      autofocus="yes"
+                                      class="form-control"
+                                      name="cc"
+                                      id="cc"
+                                      placeholder="Enter your ID"
+                                      onKeyPress="return soloNumeros(event);"
+                                      style="flex:1;"
+                                    >
+                                    <button type="button" id="btn-send" class="btn btn-primary btn-send-id">
+                                      Send
+                                    </button>
+                                  </div>
 
                                   <input readonly="yes" class="campo2a" type="hidden" name="fecha" id="fecha" value="<?= $fecha_actual ?>">
                                   <input readonly="yes" class="coords" type="hidden" name="coords" id="coords" value="">
@@ -413,12 +444,12 @@ $modulo = 'Record Time';
                                 <div class="k-value" id="syncLabel"><?= htmlspecialchars($fecha_actual); ?></div>
                               </div>
 
-                              <div class="rt-kpi">
+                                  <div class="rt-kpi">
                                 <div class="k-title">
                                   Input Mode
-                                  <span class="k-chip">Fast</span>
+                                  <span class="k-chip">Manual</span>
                                 </div>
-                                <div class="k-value">Auto validate after typing/paste</div>
+                                <div class="k-value">Press "Send" to validate your ID</div>
                               </div>
 
                               <div class="rt-kpi">
@@ -454,21 +485,21 @@ $modulo = 'Record Time';
   <script type="text/javascript" src="./admin/js/reloj_entrada_salida.js"></script>
 
   <script>
-    $.fn.delayPasteKeyUp = function(fn, ms) {
-      var timer = 0;
-      $(this).on("propertychange input", function() {
-        clearTimeout(timer);
-        timer = setTimeout(fn, ms);
-      });
-    };
-
     $(document).ready(function() {
       $("#coords").val("");
-      $("#cc").delayPasteKeyUp(function() {
-        RELOJENTRADASALIDA.validate();
-      }, 200);
 
-      // UI-only labels
+      function handleSend() {
+        RELOJENTRADASALIDA.validate();
+      }
+
+      $("#btn-send").on("click", handleSend);
+      $("#cc").on("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleSend();
+        }
+      });
+
       $("#tzLabel").text("America/Bogota");
     });
   </script>

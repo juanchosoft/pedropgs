@@ -43,9 +43,7 @@ function getLocationByIP() {
 }
 
 function tryAutoValidate() {
-    if ($("#cc").val() != "" && $("#coords").val() != "" && $("#coords").val() != "0,0") {
-        RELOJENTRADASALIDA.validateEntradaSalida();
-    }
+    // no longer auto-validates; waits for Send button click
 }
 
 var RELOJENTRADASALIDA = {
