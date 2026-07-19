@@ -24,23 +24,24 @@ class Usuario
             if ($id > 0) {
                 /*
                  * Cuando se consulta un usuario para editar,
-                 * también traemos los días de descanso desde tec_employee
-                 * y las unidades asignadas desde la tabla pivote.
+                 * traemos el nombre del empleado asociado.
                  *
-                 * Relación correcta:
+                 * Relación correcta (campo mal nombrado históricamente):
                  * tec_usuarios.employee_id = tec_employee.cc
                  */
                 $q = "SELECT 
                         u.*,
+                        e.nombre AS employee_nombre,
+                        e.cc AS employee_cc,
                         e.dias_descanso,
                         CASE 
-                            WHEN u.employee_id IS NOT NULL AND u.employee_id <> '' THEN 'si'
+                            WHEN u.employee_id IS NOT NULL AND u.employee_id <> '' AND u.employee_id <> 0 THEN 'si'
                             ELSE 'no'
                         END AS es_empleado,
                         GROUP_CONCAT(uhu.tbl_unidades_id) AS unidades_ids
                       FROM " . $db->getTable('tec_usuarios') . " AS u
                       LEFT JOIN " . $db->getTable('tec_employee') . " AS e
-                        ON e.cc = u.employee_id
+                        ON CAST(e.cc AS CHAR) = CAST(u.employee_id AS CHAR)
                       LEFT JOIN " . $db->getTable('tec_usuarios_has_tbl_unidades') . " AS uhu
                         ON uhu.tec_usuarios_id = u.id
                       WHERE u.id = :id
@@ -266,8 +267,10 @@ class Usuario
         $id = isset($rqst['id']) ? intval($rqst['id']) : 0;
         $nickname = isset($rqst['nickname']) ? trim($rqst['nickname']) : '';
         $hashpass = isset($rqst['hashpass']) ? trim($rqst['hashpass']) : '';
-        $employee_id = isset($rqst['employee_id']) ? trim($rqst['employee_id']) : null;
-        $employee_id = $employee_id === '' ? null : $employee_id;
+        // employee_id en usuarios almacena tec_employee.cc (no el PK).
+        $employee_id = self::normalizeEmployeeCc(isset($rqst['employee_id']) ? $rqst['employee_id'] : '');
+        $emp_mode = isset($rqst['emp_mode']) ? trim((string) $rqst['emp_mode']) : '';
+        $es_empleado = !empty($rqst['es_empleado']) && (string) $rqst['es_empleado'] !== '0';
         $nombre = isset($rqst['nombre']) ? trim($rqst['nombre']) : '';
         $apellido = isset($rqst['apellido']) ? trim($rqst['apellido']) : '';
         $tipo = isset($rqst['tipo']) ? trim($rqst['tipo']) : '';
@@ -328,6 +331,17 @@ class Usuario
                  */
                 $hashFinal = $hashpass != "" ? $hashpass : $usuarioActual['hashpass'];
 
+                if ($es_empleado) {
+                    $resolved = self::resolveEmployeeId($pdo, $db, $emp_mode, $employee_id, $rqst, $nombre, $apellido, $nickname);
+                    if (!$resolved['ok']) {
+                        $db->closeConect();
+                        return Util::error_general($resolved['msg']);
+                    }
+                    $employee_id = $resolved['employee_id'];
+                } else {
+                    $employee_id = null;
+                }
+
                 $q = "UPDATE " . $db->getTable('tec_usuarios') . " SET
                         dtcreate = " . Util::date_now_server() . ",
                         nickname = :nickname,
@@ -359,14 +373,6 @@ class Usuario
                 if (!$ok) {
                     $db->closeConect();
                     return Util::error_general('Actualizando los datos del usuario');
-                }
-
-                /*
-                 * Si tiene Employee ID, se sincroniza con tec_employee usando cc.
-                 * No se modifican los días restantes.
-                 */
-                if ($employee_id != "") {
-                    self::syncEmployee($pdo, $db, $employee_id, $nombre, $apellido, $nickname, $tbl_unidad_id);
                 }
 
                 /*
@@ -411,6 +417,17 @@ class Usuario
             if ($stmtCheck->fetch(PDO::FETCH_ASSOC)) {
                 $db->closeConect();
                 return Util::error_general('The user email already exists');
+            }
+
+            if ($es_empleado) {
+                $resolved = self::resolveEmployeeId($pdo, $db, $emp_mode, $employee_id, $rqst, $nombre, $apellido, $nickname);
+                if (!$resolved['ok']) {
+                    $db->closeConect();
+                    return Util::error_general($resolved['msg']);
+                }
+                $employee_id = $resolved['employee_id'];
+            } else {
+                $employee_id = null;
             }
 
             $q = "INSERT INTO " . $db->getTable('tec_usuarios') . " 
@@ -462,13 +479,6 @@ class Usuario
             $usuarioId = $pdo->lastInsertId();
 
             /*
-             * Solo crea o actualiza empleado cuando employee_id viene con información.
-             */
-            if ($employee_id != "") {
-                self::syncEmployee($pdo, $db, $employee_id, $nombre, $apellido, $nickname, $tbl_unidad_id);
-            }
-
-            /*
              * Sincroniza la tabla pivote de unidades asignadas.
              */
             self::syncUnidades($pdo, $db, $usuarioId, $unidadIds);
@@ -488,137 +498,176 @@ class Usuario
         return $arrjson;
     }
 
-    private static function syncEmployee($pdo, $db, $employee_id, $nombre, $apellido, $email, $tbl_unidad_id)
+    /**
+     * Normaliza el valor que va en tec_usuarios.employee_id (= tec_employee.cc).
+     * La columna de usuarios es int(11); se acepta string numérico.
+     *
+     * @param mixed $cc
+     * @return int|null
+     */
+    private static function normalizeEmployeeCc($cc)
     {
-        $employee_id = trim($employee_id);
+        $cc = trim((string) $cc);
+        if ($cc === '' || $cc === '0') {
+            return null;
+        }
+        if (!ctype_digit($cc) && !preg_match('/^-?\d+$/', $cc)) {
+            return null;
+        }
+        $asInt = (int) $cc;
+        return $asInt === 0 ? null : $asInt;
+    }
 
-        if ($employee_id == "") {
-            return true;
+    /**
+     * Resuelve tec_usuarios.employee_id = tec_employee.cc
+     * Modes: keep | existing | create
+     *
+     * @return array{ok:bool, employee_id:?int, msg:string}
+     */
+    private static function resolveEmployeeId($pdo, $db, $emp_mode, $employee_id, $rqst, $nombre, $apellido, $email)
+    {
+        $emp_mode = trim((string) $emp_mode);
+        $employee_id = self::normalizeEmployeeCc($employee_id);
+
+        // Ya asociado y no pide cambiar: conservar (employee_id ya es el cc)
+        if ($emp_mode === '' || $emp_mode === 'keep') {
+            if ($employee_id !== null && self::employeeExistsByCc($pdo, $db, $employee_id)) {
+                return ['ok' => true, 'employee_id' => $employee_id, 'msg' => ''];
+            }
+            return ['ok' => false, 'employee_id' => null, 'msg' => 'Debe asociar un empleado existente o crear uno nuevo.'];
         }
 
-        $nombreCompleto = trim($nombre . " " . $apellido);
-
-        /*
-         * IMPORTANTE:
-         * En tec_usuarios el campo se llama employee_id.
-         * En tec_employee el campo real se llama cc.
-         *
-         * Relación:
-         * tec_usuarios.employee_id = tec_employee.cc
-         */
-
-        $qCheck = "SELECT id 
-                   FROM " . $db->getTable('tec_employee') . " 
-                   WHERE cc = :cc 
-                   LIMIT 1";
-
-        $stmtCheck = $pdo->prepare($qCheck);
-        $stmtCheck->execute([
-            ':cc' => $employee_id
-        ]);
-
-        $empleado = $stmtCheck->fetch(PDO::FETCH_ASSOC);
-
-        if ($empleado) {
-            /*
-             * Si existe, actualizamos solo información básica.
-             * No tocamos dias_descanso para no borrar los días restantes.
-             */
-            $qUpdate = "UPDATE " . $db->getTable('tec_employee') . " SET
-                            nombre = :nombre,
-                            email = :email,
-                            enable = :enable,
-                            tbl_unidad_id = :tbl_unidad_id
-                        WHERE cc = :cc";
-
-            $stmtUpdate = $pdo->prepare($qUpdate);
-
-            return $stmtUpdate->execute([
-                ':nombre' => $nombreCompleto,
-                ':email' => $email,
-                ':enable' => 'si',
-                ':tbl_unidad_id' => $tbl_unidad_id,
-                ':cc' => $employee_id
-            ]);
+        if ($emp_mode === 'existing') {
+            if ($employee_id === null) {
+                return ['ok' => false, 'employee_id' => null, 'msg' => 'Seleccione un empleado existente.'];
+            }
+            if (!self::employeeExistsByCc($pdo, $db, $employee_id)) {
+                return ['ok' => false, 'employee_id' => null, 'msg' => 'El empleado seleccionado no existe (cc).'];
+            }
+            return ['ok' => true, 'employee_id' => $employee_id, 'msg' => ''];
         }
 
-        /*
-         * Si no existe, lo creamos.
-         * dias_descanso inicia en 0 para que después puedas actualizarlo desde empleados.
-         */
-        $qInsert = "INSERT INTO " . $db->getTable('tec_employee') . " 
+        if ($emp_mode === 'create') {
+            $created = self::createEmployeeFromUser($pdo, $db, $rqst, $nombre, $apellido, $email);
+            if (!$created['ok']) {
+                return $created;
+            }
+            // Tras crear, el vínculo del usuario es el cc (no el PK).
+            return ['ok' => true, 'employee_id' => $created['employee_id'], 'msg' => ''];
+        }
+
+        return ['ok' => false, 'employee_id' => null, 'msg' => 'Modo de empleado no válido.'];
+    }
+
+    private static function employeeExistsByCc($pdo, $db, $cc)
+    {
+        $cc = self::normalizeEmployeeCc($cc);
+        if ($cc === null) {
+            return false;
+        }
+        $stmt = $pdo->prepare(
+            "SELECT id FROM " . $db->getTable('tec_employee') . "
+             WHERE CAST(cc AS CHAR) = :cc
+             LIMIT 1"
+        );
+        $stmt->execute([':cc' => (string) $cc]);
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Crea tec_employee con datos del usuario + campos emp_*.
+     * El cc se genera automáticamente (Empleado::generateNextCc).
+     * Devuelve employee_id = cc (valor a guardar en tec_usuarios.employee_id).
+     *
+     * @return array{ok:bool, employee_id:?int, msg:string}
+     */
+    private static function createEmployeeFromUser($pdo, $db, $rqst, $nombre, $apellido, $email)
+    {
+        $nombreCompleto = trim($nombre . ' ' . $apellido);
+        $cc = Empleado::generateNextCc($pdo, $db);
+        $fecha_ingreso = isset($rqst['emp_fecha_ingreso']) ? trim((string) $rqst['emp_fecha_ingreso']) : '';
+        $celular = isset($rqst['emp_celular']) ? trim((string) $rqst['emp_celular']) : '';
+        $direccion = isset($rqst['emp_direccion']) ? trim((string) $rqst['emp_direccion']) : '';
+        $genero = isset($rqst['emp_genero']) ? trim((string) $rqst['emp_genero']) : '';
+        $camisa = isset($rqst['emp_camisa']) ? trim((string) $rqst['emp_camisa']) : '';
+        $pantalon = isset($rqst['emp_pantalon']) ? trim((string) $rqst['emp_pantalon']) : '';
+        $calzado = isset($rqst['emp_calzado']) ? trim((string) $rqst['emp_calzado']) : '';
+        $entrega_uniforme = isset($rqst['emp_entrega_uniforme']) ? trim((string) $rqst['emp_entrega_uniforme']) : '';
+
+        if ($genero === 'seleccione') {
+            $genero = '';
+        }
+        if ($camisa === 'seleccione') {
+            $camisa = '';
+        }
+        if ($pantalon === 'seleccione') {
+            $pantalon = '';
+        }
+        if ($calzado === 'seleccione') {
+            $calzado = '';
+        }
+
+        if ($fecha_ingreso === '') {
+            return ['ok' => false, 'employee_id' => null, 'msg' => 'La fecha de ingreso del empleado es obligatoria.'];
+        }
+        if ($celular === '') {
+            return ['ok' => false, 'employee_id' => null, 'msg' => 'El celular del empleado es obligatorio.'];
+        }
+
+        // Reintento corto si hubo carrera en el código generado
+        if (self::employeeExistsByCc($pdo, $db, $cc)) {
+            $cc = Empleado::generateNextCc($pdo, $db);
+        }
+        if (self::employeeExistsByCc($pdo, $db, $cc)) {
+            return ['ok' => false, 'employee_id' => null, 'msg' => 'No fue posible generar un Id de empleado único.'];
+        }
+
+        $qInsert = "INSERT INTO " . $db->getTable('tec_employee') . "
                     (
-                        dtcreate, 
-                        nombre, 
-                        cc, 
-                        email, 
-                        enable, 
-                        tbl_unidad_id,
-                        dias_descanso,
-                        image,
-                        document_id,
-                        genero,
-                        celular,
-                        fecha_ingreso,
-                        fecha_nacimiento,
-                        lugar_nacimiento,
-                        direccion,
-                        estado_civil,
-                        rh,
-                        camisa,
-                        pantalon,
-                        calzado,
-                        entrega_uniforme
-                    ) 
-                    VALUES 
+                        dtcreate, nombre, cc, email, enable, tbl_unidad_id, dias_descanso,
+                        image, document_id, genero, celular, fecha_ingreso, fecha_nacimiento,
+                        lugar_nacimiento, direccion, estado_civil, rh, camisa, pantalon,
+                        calzado, entrega_uniforme
+                    )
+                    VALUES
                     (
-                        " . Util::date_now_server() . ", 
-                        :nombre, 
-                        :cc, 
-                        :email, 
-                        :enable, 
-                        :tbl_unidad_id,
-                        :dias_descanso,
-                        :image,
-                        :document_id,
-                        :genero,
-                        :celular,
-                        :fecha_ingreso,
-                        :fecha_nacimiento,
-                        :lugar_nacimiento,
-                        :direccion,
-                        :estado_civil,
-                        :rh,
-                        :camisa,
-                        :pantalon,
-                        :calzado,
-                        :entrega_uniforme
+                        " . Util::date_now_server() . ",
+                        :nombre, :cc, :email, :enable, :tbl_unidad_id, :dias_descanso,
+                        :image, :document_id, :genero, :celular, :fecha_ingreso, :fecha_nacimiento,
+                        :lugar_nacimiento, :direccion, :estado_civil, :rh, :camisa, :pantalon,
+                        :calzado, :entrega_uniforme
                     )";
 
-        $stmtInsert = $pdo->prepare($qInsert);
-
-        return $stmtInsert->execute([
+        $stmt = $pdo->prepare($qInsert);
+        $ok = $stmt->execute([
             ':nombre' => $nombreCompleto,
-            ':cc' => $employee_id,
+            ':cc' => (string) $cc,
             ':email' => $email,
             ':enable' => 'si',
-            ':tbl_unidad_id' => $tbl_unidad_id,
+            ':tbl_unidad_id' => 0,
             ':dias_descanso' => 0,
             ':image' => '',
             ':document_id' => 1,
-            ':genero' => 'si',
-            ':celular' => '',
-            ':fecha_ingreso' => date('Y-m-d'),
-            ':fecha_nacimiento' => date('Y-m-d'),
+            ':genero' => $genero !== '' ? $genero : 'Other',
+            ':celular' => $celular,
+            ':fecha_ingreso' => $fecha_ingreso,
+            ':fecha_nacimiento' => '',
             ':lugar_nacimiento' => '',
-            ':direccion' => '',
+            ':direccion' => $direccion,
             ':estado_civil' => '',
             ':rh' => '',
-            ':camisa' => '',
-            ':pantalon' => '',
-            ':calzado' => '',
-            ':entrega_uniforme' => ''
+            ':camisa' => $camisa,
+            ':pantalon' => $pantalon,
+            ':calzado' => $calzado,
+            ':entrega_uniforme' => $entrega_uniforme,
         ]);
+
+        if (!$ok) {
+            return ['ok' => false, 'employee_id' => null, 'msg' => 'No fue posible crear el empleado.'];
+        }
+
+        // Vínculo correcto: tec_usuarios.employee_id = tec_employee.cc
+        return ['ok' => true, 'employee_id' => (int) $cc, 'msg' => ''];
     }
 
     private static function syncUnidades($pdo, $db, $usuarioId, array $unidadIds)

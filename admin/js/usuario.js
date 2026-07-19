@@ -63,12 +63,22 @@ var USUARIO = {
         UTIL.cursorNormal();
         if (data.output.valid) {
             var res = data.output.response[0];
+            var empId = res.employee_id != null && String(res.employee_id).trim() !== "" && String(res.employee_id) !== "0"
+                ? String(res.employee_id).trim()
+                : "";
+            // employee_id del usuario = cc del empleado
+            var empName = res.employee_nombre ? String(res.employee_nombre).trim() : "";
+            if (!empName) {
+                empName = "Associated employee";
+            }
+
             $("#id").val(res.id);
             $("#nombre").val(res.nombre).trigger("change");
             $("#apellido").val(res.apellido).trigger("change");
             $("#celular").val(res.celular).trigger("change");
             $("#tipo").val(res.tipo).trigger("change");
-            $("#employee_id").val(res.employee_id).trigger("change");
+            $("#employee_id").val(empId);
+            $("#emp_mode").val(empId !== "" ? "keep" : "");
             $("#nickname").val(res.nickname).trigger("change");
             $("#nickname2").val(res.nickname).trigger("change");
             $("#hashpass").val("").trigger("change");
@@ -81,6 +91,18 @@ var USUARIO = {
             $("#habilitado").val(res.habilitado).trigger("change");
             $("#tipo").val(res.tipo).trigger("change");
             $("#myModal").modal();
+
+            // Asociación usuario ↔ empleado (sin Select2 si ya está vinculado)
+            setTimeout(function() {
+                if (typeof window.PGS_setEmployeeMode === "function") {
+                    var isEmployee = empId !== "" || res.es_empleado === "si";
+                    window.PGS_setEmployeeMode(isEmployee, {
+                        linkedId: empId,
+                        linkedName: empName,
+                        keepValue: true
+                    });
+                }
+            }, 120);
         } else {
             swal("warning", data.output.response.content, "error");
         }
@@ -91,8 +113,7 @@ var USUARIO = {
         if (
             $("#nombre").val() == "" ||
             $("#nickname").val() == "" ||
-            $("#apellido").val() == "" ||
-            $("#identificacion_num").val() == ""
+            $("#apellido").val() == ""
         ) {
             swal("warning", msj, "error");
             bValid = false;
@@ -118,6 +139,11 @@ var USUARIO = {
                     "error"
                 );
                 bValid = false;
+                return;
+            }
+        }
+        if (typeof window.PGS_validateEmployeeBeforeSave === "function") {
+            if (!window.PGS_validateEmployeeBeforeSave()) {
                 return;
             }
         }
@@ -181,7 +207,6 @@ var USUARIO = {
         q.op = "pms_usrsave";
         q.id = $("#id").val();
         q.nombre = $("#nombre").val();
-        q.employee_id = $("#employee_id").val();
         q.apellido = $("#apellido").val();
         q.celular = $("#celular").val();
         q.nickname = $("#nickname").val();
@@ -191,6 +216,20 @@ var USUARIO = {
         q.tbl_unidad_id = $("#tbl_unidad_id").val();
         q.habilitado = $("#habilitado").val();
         q.tipo = $("#tipo").val();
+
+        // Asociación: tec_usuarios.employee_id = tec_employee.cc
+        q.es_empleado = $("#es_empleado").is(":checked") ? 1 : 0;
+        q.emp_mode = $("#emp_mode").val() || "";
+        q.employee_id = $("#employee_id").val() || "";
+        q.emp_fecha_ingreso = $("#emp_fecha_ingreso").val() || "";
+        q.emp_celular = $("#emp_celular").val() || "";
+        q.emp_direccion = $("#emp_direccion").val() || "";
+        q.emp_genero = $("#emp_genero").val() || "";
+        q.emp_camisa = $("#emp_camisa").val() || "";
+        q.emp_pantalon = $("#emp_pantalon").val() || "";
+        q.emp_calzado = $("#emp_calzado").val() || "";
+        q.emp_entrega_uniforme = $("#emp_entrega_uniforme").val() || "";
+
         UTIL.callAjaxRqstPOST(q, USUARIO.savedatahandler);
     },
     savedatahandler: function(data) {

@@ -1401,7 +1401,7 @@ $modulo = 'Users';
                 <div class="form-group employee-switch-card">
                   <div class="employee-switch-info">
                     <label for="es_empleado" class="employee-switch-title">Is employee?</label>
-                    <small>Turn on this option only when the user must be linked to an employee ID.</small>
+                    <small>Turn on to associate or create an employee for this user.</small>
                   </div>
 
                   <label class="employee-switch">
@@ -1412,10 +1412,130 @@ $modulo = 'Users';
                 </div>
               </div>
 
-              <div class="col-sm-6" id="employee_id_wrap" style="display:none;">
+              <input type="hidden" id="employee_id" name="employee_id" value="">
+              <input type="hidden" id="emp_mode" name="emp_mode" value="">
+
+              <div class="col-sm-12" id="emp_linked_wrap" style="display:none;">
+                <div class="form-group" style="background:#f8fafc;border:1px solid #e7eaf1;border-radius:12px;padding:12px 14px;">
+                  <label class="bmd-label-floating" style="margin:0;">Associated employee</label>
+                  <div id="emp_linked_text" style="font-weight:900;color:#0B0F19;margin-top:4px;">—</div>
+                  <small class="text-muted">This user is already linked to an employee. Search is hidden.</small>
+                </div>
+              </div>
+
+              <div class="col-sm-12" id="emp_choice_wrap" style="display:none;">
+                <div class="form-group" style="background:#fff;border:1px solid #e7eaf1;border-radius:12px;padding:12px 14px;">
+                  <label class="bmd-label-floating">Employee association <b class="errLbl">*</b></label>
+                  <div class="d-flex flex-wrap" style="gap:10px;margin-top:8px;">
+                    <button type="button" class="btn btn-outline-dark btn-sm" id="emp_btn_existing" data-emp-choice="existing" style="font-weight:800;">
+                      Associate existing
+                    </button>
+                    <button type="button" class="btn btn-outline-dark btn-sm" id="emp_btn_create" data-emp-choice="create" style="font-weight:800;">
+                      Create new employee
+                    </button>
+                  </div>
+                  <small class="text-muted d-block mt-2">Choose one option to continue.</small>
+                </div>
+              </div>
+
+              <div class="col-sm-12" id="emp_select_wrap" style="display:none;">
                 <div class="form-group">
-                  <label class="bmd-label-floating">Employee ID <b class="errLbl">*</b></label>
-                  <input type="text" class="form-control js-only-numbers" id="employee_id" name="employee_id" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-only-numbers="true">
+                  <label class="bmd-label-floating">Search employee <b class="errLbl">*</b></label>
+                  <select class="form-control" id="emp_select" name="emp_select" style="width:100%;">
+                    <option value="">Select employee…</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="col-sm-12" id="emp_create_wrap" style="display:none;">
+                <div style="border:1px solid #e7eaf1;border-radius:14px;padding:14px 14px 4px;margin-bottom:8px;background:#fbfcfe;">
+                  <div style="font-weight:1000;margin-bottom:10px;color:#0B0F19;">New employee data</div>
+                  <div class="row">
+                    <div class="col-sm-4">
+                      <div class="form-group">
+                        <label class="bmd-label-floating">Hire date <b class="errLbl">*</b></label>
+                        <input type="date" class="form-control" id="emp_fecha_ingreso" name="emp_fecha_ingreso">
+                      </div>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="form-group">
+                        <label class="bmd-label-floating">Cell phone <b class="errLbl">*</b></label>
+                        <input type="text" class="form-control js-only-numbers" id="emp_celular" name="emp_celular" inputmode="numeric" autocomplete="off">
+                      </div>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="form-group">
+                        <label class="bmd-label-floating">Address</label>
+                        <input type="text" class="form-control" id="emp_direccion" name="emp_direccion">
+                      </div>
+                    </div>
+                    <div class="col-sm-6">
+                      <div class="form-group">
+                        <label class="bmd-label-floating">Gender</label>
+                        <select class="form-control" id="emp_genero" name="emp_genero">
+                          <option value="seleccione">Select a option</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-sm-3">
+                      <div class="form-group">
+                        <label class="bmd-label-floating">Shirt</label>
+                        <select class="form-control" id="emp_camisa" name="emp_camisa">
+                          <option value="seleccione">Select</option>
+                          <option value="XS">XS</option>
+                          <option value="S">S</option>
+                          <option value="M">M</option>
+                          <option value="L">L</option>
+                          <option value="XL">XL</option>
+                          <option value="XXL">XXL</option>
+                          <option value="XXXL">XXXL</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-sm-3">
+                      <div class="form-group">
+                        <label class="bmd-label-floating">Pants</label>
+                        <select class="form-control" id="emp_pantalon" name="emp_pantalon">
+                          <option value="seleccione">Select</option>
+                          <option value="28">28</option>
+                          <option value="30">30</option>
+                          <option value="32">32</option>
+                          <option value="34">34</option>
+                          <option value="36">36</option>
+                          <option value="38">38</option>
+                          <option value="40">40</option>
+                          <option value="42">42</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-sm-3">
+                      <div class="form-group">
+                        <label class="bmd-label-floating">Shoes</label>
+                        <select class="form-control" id="emp_calzado" name="emp_calzado">
+                          <option value="seleccione">Select</option>
+                          <option value="36">36</option>
+                          <option value="37">37</option>
+                          <option value="38">38</option>
+                          <option value="39">39</option>
+                          <option value="40">40</option>
+                          <option value="41">41</option>
+                          <option value="42">42</option>
+                          <option value="43">43</option>
+                          <option value="44">44</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-sm-3">
+                      <div class="form-group">
+                        <label class="bmd-label-floating">Uniform delivery</label>
+                        <input type="date" class="form-control" id="emp_entrega_uniforme" name="emp_entrega_uniforme">
+                      </div>
+                    </div>
+                  </div>
+                  <small class="text-muted d-block mb-2">Name and email are taken from the user fields above. Employee Id is generated automatically.</small>
                 </div>
               </div>
 
@@ -1654,203 +1774,344 @@ $modulo = 'Users';
 
 
     /**
-     * Muestra Employee ID solo cuando el usuario se marca como empleado.
-     * Además recuerda el estado al editar y muestra los días de descanso restantes.
-     * Mantiene intactos ids, names, formulario, backend y envío existente.
+     * Asociación usuario ↔ empleado.
+     * Vínculo: tec_usuarios.employee_id = tec_employee.cc
+     * - Sin asociación: elegir existente (Select2 valor=cc) o crear nuevo.
+     * - Ya asociado: no mostrar Select2.
      */
     (function () {
       'use strict';
 
+      var empSelectInitTimer = null;
+
       function qs(selector) {
         return document.querySelector(selector);
-      }
-
-      function getRestDaysMap() {
-        return window.PGS_EMPLOYEE_REST_DAYS || {};
       }
 
       function normalizeValue(value) {
         return String(value == null ? '' : value).trim();
       }
 
-      function formatDays(value) {
-        var clean = normalizeValue(value);
-
-        if (clean === '') {
-          return '0 days';
-        }
-
-        var number = parseFloat(clean);
-        if (!isNaN(number)) {
-          return number + (number === 1 ? ' day' : ' days');
-        }
-
-        return clean + ' days';
+      function optionHas(options, key) {
+        return options && Object.prototype.hasOwnProperty.call(options, key);
       }
 
-      function getRestDaysByEmployeeId(employeeId) {
-        employeeId = normalizeValue(employeeId);
-        if (employeeId === '') return '';
-
-        var map = getRestDaysMap();
-        return Object.prototype.hasOwnProperty.call(map, employeeId) ? map[employeeId] : '';
+      function setEmpModeValue(mode) {
+        var input = qs('#emp_mode');
+        if (input) input.value = mode || '';
       }
 
-      function updateRestDays(employeeId, isEmployee) {
-        var wrap = qs('#rest_days_wrap');
-        var text = qs('#dias_descanso_text');
-        var hint = qs('#dias_descanso_hint');
-        var hidden = qs('#dias_descanso');
+      function getCurrentUserId() {
+        return normalizeValue(qs('#id') ? qs('#id').value : '');
+      }
 
-        employeeId = normalizeValue(employeeId);
+      function getModalParent() {
+        var $modal = jQuery('#myModal');
+        var $content = $modal.find('.modal-content').first();
+        return $content.length ? $content : $modal;
+      }
 
-        if (!wrap || !text || !hidden) return;
+      function destroyEmpSelect2() {
+        if (empSelectInitTimer) {
+          clearTimeout(empSelectInitTimer);
+          empSelectInitTimer = null;
+        }
+        if (!window.jQuery) return;
+        var $el = jQuery('#emp_select');
+        if ($el.length && $el.hasClass('select2-hidden-accessible')) {
+          try {
+            $el.off('.pgsEmp');
+            $el.select2('close');
+            $el.select2('destroy');
+          } catch (e) {}
+        }
+      }
 
-        if (!isEmployee || employeeId === '') {
-          wrap.style.display = 'none';
-          text.textContent = '0 days';
-          hidden.value = '';
-          if (hint) hint.textContent = 'This information is linked to the employee record.';
+      function initEmpSelect2() {
+        if (!window.jQuery || !jQuery.fn.select2) return;
+
+        if (empSelectInitTimer) {
+          clearTimeout(empSelectInitTimer);
+          empSelectInitTimer = null;
+        }
+
+        // Diferir: evita pelea de foco con el click del radio / enforceFocus del modal
+        empSelectInitTimer = setTimeout(function () {
+          empSelectInitTimer = null;
+          var $el = jQuery('#emp_select');
+          if (!$el.length) return;
+
+          if ($el.hasClass('select2-hidden-accessible')) {
+            try { $el.select2('destroy'); } catch (e) {}
+          }
+
+          $el.select2({
+            placeholder: 'Search employee by name or CC…',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: getModalParent(),
+            minimumInputLength: 0,
+            ajax: {
+              url: 'admin/ajax/rqst.php',
+              dataType: 'json',
+              delay: 250,
+              data: function (params) {
+                return {
+                  op: 'pms_empleadosearch',
+                  q: params.term || '',
+                  exclude_user_id: getCurrentUserId() || 0
+                };
+              },
+              processResults: function (data) {
+                var rows = (data && data.output && data.output.valid) ? (data.output.response || []) : [];
+                return {
+                  results: rows.map(function (r) {
+                    return { id: String(r.id), text: r.text || r.nombre || ('Employee ' + r.id) };
+                  })
+                };
+              },
+              cache: true
+            }
+          });
+
+          $el.off('change.pgsEmp select2:select.pgsEmp select2:clear.pgsEmp')
+            .on('change.pgsEmp select2:select.pgsEmp select2:clear.pgsEmp', function () {
+              var val = jQuery(this).val();
+              var empInput = qs('#employee_id');
+              if (empInput) empInput.value = val || '';
+            });
+        }, 50);
+      }
+
+      function hideAllEmpPanels() {
+        ['#emp_choice_wrap', '#emp_select_wrap', '#emp_create_wrap', '#emp_linked_wrap', '#rest_days_wrap'].forEach(function (sel) {
+          var el = qs(sel);
+          if (el) el.style.display = 'none';
+        });
+      }
+
+      function clearCreateFields() {
+        ['#emp_fecha_ingreso', '#emp_celular', '#emp_direccion', '#emp_entrega_uniforme'].forEach(function (sel) {
+          var el = qs(sel);
+          if (el) el.value = '';
+        });
+        ['#emp_genero', '#emp_camisa', '#emp_pantalon', '#emp_calzado'].forEach(function (sel) {
+          var el = qs(sel);
+          if (el) el.value = 'seleccione';
+        });
+      }
+
+      function clearChoiceRadios() {
+        // Compat: limpia estado visual de botones de elección
+        setChoiceButtonsActive('');
+      }
+
+      function setChoiceButtonsActive(choice) {
+        var btnExisting = qs('#emp_btn_existing');
+        var btnCreate = qs('#emp_btn_create');
+        if (btnExisting) {
+          btnExisting.classList.toggle('btn-dark', choice === 'existing');
+          btnExisting.classList.toggle('btn-outline-dark', choice !== 'existing');
+        }
+        if (btnCreate) {
+          btnCreate.classList.toggle('btn-dark', choice === 'create');
+          btnCreate.classList.toggle('btn-outline-dark', choice !== 'create');
+        }
+      }
+
+      function applyChoice(choice) {
+        choice = normalizeValue(choice);
+        var selectWrap = qs('#emp_select_wrap');
+        var createWrap = qs('#emp_create_wrap');
+        if (selectWrap) selectWrap.style.display = 'none';
+        if (createWrap) createWrap.style.display = 'none';
+
+        setChoiceButtonsActive(choice);
+
+        if (choice === 'existing') {
+          setEmpModeValue('existing');
+          if (selectWrap) selectWrap.style.display = '';
+          if (window.jQuery) {
+            try { jQuery('#emp_select').val(''); } catch (e) {}
+          }
+          var empInput = qs('#employee_id');
+          if (empInput) empInput.value = '';
+          initEmpSelect2();
+        } else if (choice === 'create') {
+          setEmpModeValue('create');
+          destroyEmpSelect2();
+          if (window.jQuery) {
+            try { jQuery('#emp_select').val(null); } catch (e) {}
+          }
+          var empInput2 = qs('#employee_id');
+          if (empInput2) empInput2.value = '';
+          if (createWrap) createWrap.style.display = '';
+        } else {
+          setEmpModeValue('');
+        }
+      }
+
+      function setEmployeeMode(isEmployee, options) {
+        options = options || {};
+        var check = qs('#es_empleado');
+        var text = qs('#es_empleado_text');
+        // linkedId: '' debe respetarse (no caer al valor previo de #employee_id)
+        var linkedId = normalizeValue(
+          optionHas(options, 'linkedId')
+            ? options.linkedId
+            : (qs('#employee_id') ? qs('#employee_id').value : '')
+        );
+        var linkedName = normalizeValue(
+          optionHas(options, 'linkedName') ? options.linkedName : ''
+        );
+
+        if (!check) return;
+
+        check.checked = !!isEmployee;
+        if (text) text.textContent = check.checked ? 'Yes' : 'No';
+
+        hideAllEmpPanels();
+        destroyEmpSelect2();
+
+        if (!check.checked) {
+          if (!options.keepValue) {
+            var empInput = qs('#employee_id');
+            if (empInput) empInput.value = '';
+            setEmpModeValue('');
+            clearChoiceRadios();
+            clearCreateFields();
+          }
           return;
         }
 
-        var days = getRestDaysByEmployeeId(employeeId);
-        wrap.style.display = '';
-        text.textContent = formatDays(days);
-        hidden.value = normalizeValue(days);
-
-        if (hint) {
-          hint.textContent = days === ''
-            ? 'No remaining rest days have been registered for this employee yet.'
-            : 'These are the available leave days still linked to this employee.';
-        }
-      }
-
-      function setEmployeeMode(isEmployee, keepValue) {
-        var check = qs('#es_empleado');
-        var text  = qs('#es_empleado_text');
-        var wrap  = qs('#employee_id_wrap');
-        var input = qs('#employee_id');
-
-        if (!check || !wrap || !input) return;
-
-        check.checked = !!isEmployee;
-        wrap.style.display = check.checked ? '' : 'none';
-        input.required = check.checked;
-
-        if (text) {
-          text.textContent = check.checked ? 'Yes' : 'No';
+        // Ya asociado: no Select2
+        if (linkedId !== '') {
+          var empKeep = qs('#employee_id');
+          if (empKeep) empKeep.value = linkedId;
+          setEmpModeValue('keep');
+          clearChoiceRadios();
+          var linkedWrap = qs('#emp_linked_wrap');
+          var linkedText = qs('#emp_linked_text');
+          if (linkedWrap) linkedWrap.style.display = '';
+          if (linkedText) {
+            linkedText.textContent = linkedName !== ''
+              ? linkedName
+              : 'Employee linked';
+          }
+          return;
         }
 
-        if (!check.checked && !keepValue) {
-          input.value = '';
-        }
-
-        updateRestDays(input.value, check.checked);
-      }
-
-      function syncEmployeeModeFromValue() {
-        var input = qs('#employee_id');
-        var check = qs('#es_empleado');
-
-        if (!input || !check) return;
-
-        var hasEmployeeId = normalizeValue(input.value) !== '';
-
-        if (hasEmployeeId) {
-          setEmployeeMode(true, true);
-        } else {
-          setEmployeeMode(check.checked, true);
-        }
+        // Sin asociación: preguntar existente vs nuevo
+        clearChoiceRadios();
+        var choiceWrap = qs('#emp_choice_wrap');
+        if (choiceWrap) choiceWrap.style.display = '';
+        setEmpModeValue('');
       }
 
       function validateEmployeeBeforeSave(event) {
         var check = qs('#es_empleado');
-        var input = qs('#employee_id');
+        if (!check || !check.checked) {
+          var empClear = qs('#employee_id');
+          if (empClear) empClear.value = '';
+          setEmpModeValue('');
+          return true;
+        }
 
-        if (!check || !input) return true;
+        var mode = normalizeValue(qs('#emp_mode').value);
+        var msg = '';
 
-        if (check.checked && normalizeValue(input.value) === '') {
+        if (mode === 'keep') {
+          if (normalizeValue(qs('#employee_id').value) === '') {
+            msg = 'This user should keep the associated employee.';
+          }
+        } else if (mode === 'existing') {
+          if (normalizeValue(qs('#employee_id').value) === '') {
+            msg = 'Please select an existing employee.';
+          }
+        } else if (mode === 'create') {
+          if (normalizeValue(qs('#emp_fecha_ingreso').value) === '') msg = 'Hire date is required.';
+          else if (normalizeValue(qs('#emp_celular').value) === '') msg = 'Cell phone is required.';
+        } else {
+          msg = 'Choose whether to associate an existing employee or create a new one.';
+        }
+
+        if (msg) {
           if (event) {
             event.preventDefault();
             event.stopPropagation();
-            if (typeof event.stopImmediatePropagation === 'function') {
-              event.stopImmediatePropagation();
-            }
+            if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
           }
-
           if (window.Swal) {
-            Swal.fire({
-              icon: 'warning',
-              title: 'Employee ID required',
-              text: 'If the user is marked as employee, you must enter the Employee ID.',
-              confirmButtonText: 'OK'
-            });
+            Swal.fire({ icon: 'warning', title: 'Employee required', text: msg, confirmButtonText: 'OK' });
           } else {
-            alert('If the user is marked as employee, you must enter the Employee ID.');
+            alert(msg);
           }
-
-          setEmployeeMode(true, true);
-          setTimeout(function () { input.focus(); }, 80);
           return false;
         }
-
-        if (!check.checked) {
-          input.value = '';
-          updateRestDays('', false);
-        }
-
         return true;
       }
 
-      function installEditPolling() {
-        var attempts = 0;
-        var lastValue = null;
+      function resetEmployeeUi() {
+        var check = qs('#es_empleado');
+        // clearForm puede vaciar value del checkbox; lo restauramos
+        if (check) check.value = '1';
+        setEmployeeMode(false, { keepValue: false, linkedId: '', linkedName: '' });
+      }
 
-        var timer = setInterval(function () {
-          var input = qs('#employee_id');
-          if (!input) return;
+      /**
+       * Bootstrap modal enforceFocus cierra el dropdown de Select2 al abrir.
+       * Permitimos foco dentro de .select2-container / .select2-dropdown.
+       */
+      function patchModalFocusForSelect2() {
+        if (!window.jQuery || !jQuery.fn.modal) return;
+        var Modal = jQuery.fn.modal.Constructor;
+        if (!Modal || Modal.prototype.__pgsSelect2Patched) return;
 
-          var currentValue = normalizeValue(input.value);
-
-          if (currentValue !== lastValue) {
-            lastValue = currentValue;
-            syncEmployeeModeFromValue();
-          } else {
-            syncEmployeeModeFromValue();
-          }
-
-          attempts++;
-          if (attempts >= 16) {
-            clearInterval(timer);
-          }
-        }, 150);
+        Modal.prototype.enforceFocus = function () {
+          var that = this;
+          jQuery(document)
+            .off('focusin.bs.modal')
+            .on('focusin.bs.modal', function (e) {
+              var $target = jQuery(e.target);
+              if ($target.closest('.select2-container').length || $target.closest('.select2-dropdown').length) {
+                return;
+              }
+              if (that.$element[0] !== e.target && !that.$element.has(e.target).length) {
+                that.$element.trigger('focus');
+              }
+            });
+        };
+        Modal.prototype.__pgsSelect2Patched = true;
       }
 
       document.addEventListener('DOMContentLoaded', function () {
         var check = qs('#es_empleado');
-        var input = qs('#employee_id');
-        var form  = qs('#formcreate');
+        var form = qs('#formcreate');
 
-        setEmployeeMode(false, true);
+        patchModalFocusForSelect2();
+        resetEmployeeUi();
 
         if (check) {
           check.addEventListener('change', function () {
-            setEmployeeMode(this.checked, false);
-
-            if (this.checked && input) {
-              setTimeout(function () { input.focus(); }, 80);
-            }
+            setEmployeeMode(this.checked, { keepValue: false, linkedId: '', linkedName: '' });
           });
         }
 
-        if (input) {
-          input.addEventListener('input', function () {
-            if (normalizeValue(this.value) !== '') {
-              setEmployeeMode(true, true);
-            } else {
-              updateRestDays('', check && check.checked);
-            }
+        // Botones (no radios): clearForm hace .val('') y destruía value="existing"/"create"
+        if (window.jQuery) {
+          jQuery(document)
+            .off('click.pgsEmpChoice', '[data-emp-choice]')
+            .on('click.pgsEmpChoice', '[data-emp-choice]', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              applyChoice(this.getAttribute('data-emp-choice'));
+            });
+        } else {
+          document.querySelectorAll('[data-emp-choice]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+              e.preventDefault();
+              applyChoice(this.getAttribute('data-emp-choice'));
+            });
           });
         }
 
@@ -1862,54 +2123,42 @@ $modulo = 'Users';
 
         if (window.jQuery) {
           jQuery('#myModal').on('show.bs.modal', function () {
-            setEmployeeMode(false, true);
-            installEditPolling();
+            if (!normalizeValue(qs('#id').value)) {
+              resetEmployeeUi();
+            }
           });
-
-          jQuery('#myModal').on('shown.bs.modal', function () {
-            installEditPolling();
-          });
-
           jQuery('#myModal').on('hidden.bs.modal', function () {
-            setEmployeeMode(false, false);
+            resetEmployeeUi();
           });
+
+          if (jQuery.fn.select2) {
+            jQuery('#tbl_unidad_id').select2({
+              placeholder: 'Select one or more units…',
+              allowClear: true,
+              width: '100%',
+              dropdownParent: getModalParent()
+            });
+          }
         }
       });
 
       document.addEventListener('click', function (event) {
         var btn = event.target.closest('button');
         if (!btn) return;
-
         var onclick = btn.getAttribute('onclick') || '';
 
         if (onclick.indexOf('USUARIO.validateData') !== -1) {
           validateEmployeeBeforeSave(event);
         }
-
-        if (onclick.indexOf('USUARIO.editdata') !== -1) {
-          installEditPolling();
-        }
-
         if (onclick.indexOf("UTIL.clearForm('formcreate')") !== -1 || onclick.indexOf('UTIL.clearForm("formcreate")') !== -1) {
-          setTimeout(function () {
-            setEmployeeMode(false, false);
-          }, 80);
+          setTimeout(resetEmployeeUi, 80);
         }
       }, true);
 
       window.PGS_setEmployeeMode = setEmployeeMode;
-      window.PGS_syncEmployeeModeFromValue = syncEmployeeModeFromValue;
-      window.PGS_updateRestDays = updateRestDays;
-
-      // Initialize Select2 for multi-unidad selection
-      if (window.jQuery && jQuery.fn.select2) {
-        jQuery('#tbl_unidad_id').select2({
-          placeholder: 'Select one or more units…',
-          allowClear: true,
-          width: '100%',
-          dropdownParent: jQuery('#myModal')
-        });
-      }
+      window.PGS_resetEmployeeUi = resetEmployeeUi;
+      window.PGS_validateEmployeeBeforeSave = validateEmployeeBeforeSave;
+      window.PGS_applyEmpChoice = applyChoice;
     })();
   </script>
 

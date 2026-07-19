@@ -415,7 +415,6 @@ foreach ($arrUnidades as $val) {
                         <thead>
                           <tr>
                             <th style="width:90px;">Item</th>
-                            <th style="width:160px;">ID</th>
                             <th>Name</th>
                             <th style="width:160px;">Actions</th>
                           </tr>
@@ -428,7 +427,6 @@ foreach ($arrUnidades as $val) {
                           ?>
                               <tr>
                                 <td class="text-primary"><b><?php echo $arr[$i]['id']; ?></b></td>
-                                <td class="text-primary"><?php echo $arr[$i]['cc']; ?></td>
                                 <td class="text-primary"><?php echo $arr[$i]['nombre']; ?></td>
                                 <td class="td-actions text-left" style="white-space:nowrap;">
                                   <?php if ($edit) { ?>
@@ -483,12 +481,7 @@ foreach ($arrUnidades as $val) {
               <div class="col-sm-12 pt-2">
                 <div class="row">
 
-                  <div class="col-sm-3">
-                    <div class="form-group">
-                      <label class="bmd-label-floating">Id <b class="errLbl">*</b></label>
-                      <input type="text" class="form-control only-numbers" id="cc" name="cc" inputmode="numeric" pattern="[0-9]*" autocomplete="off" onkeypress="return soloNumeros(event);" oninput="limpiarSoloNumeros(this);">
-                    </div>
-                  </div>                
+                  <input type="hidden" id="cc" name="cc" value="">
 
                   <div class="col-sm-3">
                     <div class="form-group">
