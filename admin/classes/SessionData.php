@@ -34,18 +34,61 @@ class SessionData
 
 
 
+    /**
+     * @deprecated Prefer hasPermission('module.action') — bridges legacy numeric IDs to KEYs.
+     */
     public static function getPermission($id)
     {
+        if (SessionData::superAdministrador()) {
+            return true;
+        }
 
-        if (isset($_SESSION['session_user'])) {
+        require_once __DIR__ . '/PermissionLegacyMap.php';
+        $key = PermissionLegacyMap::idToKey((int) $id);
+        if ($key !== null) {
+            return SessionData::hasPermissionKey($key);
+        }
 
-            $permisos = $_SESSION['session_user']['permisos'];
+        // Fallback: session still has legacy ID array during transition
+        if (isset($_SESSION['session_user']['permisos']) && is_array($_SESSION['session_user']['permisos'])) {
+            return in_array((int) $id, array_map('intval', $_SESSION['session_user']['permisos']), true);
+        }
 
-            return (in_array($id, $permisos));
-        } else {
+        return false;
+    }
 
+    public static function hasPermissionKey(string $key): bool
+    {
+        if (!isset($_SESSION['session_user']['permission_keys']) || !is_array($_SESSION['session_user']['permission_keys'])) {
             return false;
         }
+        return in_array($key, $_SESSION['session_user']['permission_keys'], true);
+    }
+
+    public static function hasPermission(string $key): bool
+    {
+        if (SessionData::superAdministrador()) {
+            return true;
+        }
+        return SessionData::hasPermissionKey($key);
+    }
+
+    /** @return string[] */
+    public static function permissionKeys(): array
+    {
+        if (!isset($_SESSION['session_user']['permission_keys']) || !is_array($_SESSION['session_user']['permission_keys'])) {
+            return [];
+        }
+        return $_SESSION['session_user']['permission_keys'];
+    }
+
+    /** @return array{id:int,key:string,name:string}|null */
+    public static function getRole(): ?array
+    {
+        if (!isset($_SESSION['session_user']['role']) || !is_array($_SESSION['session_user']['role'])) {
+            return null;
+        }
+        return $_SESSION['session_user']['role'];
     }
 
 

@@ -6,11 +6,15 @@ header("Content-type: application/javascript; charset=utf-8");
 header("Cache-Control: max-age=15, must-revalidate");
 header('Access-Control-Allow-Origin: *');
 
-
-
 include '../classes/DbConection.php';
 include '../classes/Util.php';
+include '../classes/SessionData.php';
+require_once '../classes/PermissionGate.php';
 
+$opsSinAuth = ['pms_usrlogin', ''];
+if (!in_array($op, $opsSinAuth, true)) {
+    PermissionGate::authorizeOperation($op);
+}
 
 switch ($op) {
 
@@ -759,6 +763,31 @@ switch ($op) {
         echo json_encode(EntradaSalida::save($rqst));
         break;
 
+    case 'roleslist':
+    case 'roleslistall':
+        include '../classes/Role.php';
+        echo json_encode(Role::getAll($rqst));
+        break;
+
+    case 'roleget':
+        include '../classes/Role.php';
+        echo json_encode(Role::getById($rqst));
+        break;
+
+    case 'rolesave':
+        include '../classes/Role.php';
+        echo json_encode(Role::save($rqst));
+        break;
+
+    case 'roledelete':
+        include '../classes/Role.php';
+        echo json_encode(Role::delete($rqst));
+        break;
+
+    case 'rolepermissionscatalog':
+        include '../classes/Role.php';
+        echo json_encode(Role::getPermissionsCatalog($rqst));
+        break;
 
     default:
         echo 'OPERACION NO DISPONIBLE';

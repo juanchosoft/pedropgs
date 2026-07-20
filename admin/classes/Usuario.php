@@ -184,7 +184,19 @@ class Usuario
                 $arrassigned[] = $permiso['tec_permiso_id'];
             }
 
-            $usuario['permisos'] = $arrassigned;
+            // RBAC: load permission KEYs from role (preferred). Fallback to legacy pivot IDs.
+            require_once __DIR__ . '/Authorization.php';
+            require_once __DIR__ . '/PermissionLegacyMap.php';
+            $auth = Authorization::loadUserAuth($pdo, $db, $id, isset($usuario['tipo']) ? (string) $usuario['tipo'] : '');
+            if (!empty($auth['permission_keys'])) {
+                $usuario['permission_keys'] = $auth['permission_keys'];
+                $usuario['permisos'] = !empty($auth['legacy_ids']) ? $auth['legacy_ids'] : $arrassigned;
+            } else {
+                $usuario['permission_keys'] = PermissionLegacyMap::legacyIdsToKeys($arrassigned);
+                $usuario['permisos'] = $arrassigned;
+            }
+            $usuario['role'] = $auth['role'];
+            $arrassigned = $usuario['permisos'];
 
             /*
              * Fetch all assigned unidades from the pivot table.
@@ -271,6 +283,10 @@ class Usuario
         $employee_id = self::normalizeEmployeeCc(isset($rqst['employee_id']) ? $rqst['employee_id'] : '');
         $emp_mode = isset($rqst['emp_mode']) ? trim((string) $rqst['emp_mode']) : '';
         $es_empleado = !empty($rqst['es_empleado']) && (string) $rqst['es_empleado'] !== '0';
+        $role_id = isset($rqst['role_id']) ? (int) $rqst['role_id'] : 0;
+        if ($role_id <= 0) {
+            $role_id = null;
+        }
         $nombre = isset($rqst['nombre']) ? trim($rqst['nombre']) : '';
         $apellido = isset($rqst['apellido']) ? trim($rqst['apellido']) : '';
         $tipo = isset($rqst['tipo']) ? trim($rqst['tipo']) : '';
@@ -350,6 +366,7 @@ class Usuario
                         nombre = :nombre,
                         apellido = :apellido,
                         tipo = :tipo,
+                        role_id = :role_id,
                         tbl_unidad_id = :tbl_unidad_id,
                         img = :img,
                         habilitado = :habilitado
@@ -364,6 +381,7 @@ class Usuario
                     ':nombre' => $nombre,
                     ':apellido' => $apellido,
                     ':tipo' => $tipo,
+                    ':role_id' => $role_id,
                     ':tbl_unidad_id' => $tbl_unidad_id,
                     ':img' => $imgFinal,
                     ':habilitado' => $habilitado,
@@ -438,7 +456,8 @@ class Usuario
                         employee_id, 
                         nombre, 
                         apellido,  
-                        tipo, 
+                        tipo,
+                        role_id,
                         tbl_unidad_id, 
                         img, 
                         habilitado
@@ -451,7 +470,8 @@ class Usuario
                         :employee_id, 
                         :nombre, 
                         :apellido, 
-                        :tipo, 
+                        :tipo,
+                        :role_id,
                         :tbl_unidad_id, 
                         :img, 
                         :habilitado
@@ -466,6 +486,7 @@ class Usuario
                 ':nombre' => $nombre,
                 ':apellido' => $apellido,
                 ':tipo' => $tipo,
+                ':role_id' => $role_id,
                 ':tbl_unidad_id' => $tbl_unidad_id,
                 ':img' => $imgNueva,
                 ':habilitado' => $habilitado

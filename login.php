@@ -29,6 +29,12 @@ if (isset($_SESSION['session_user'])) {
       if ($isvalid) {
         $_SESSION['session_user'] = $res['output']['response'][0];
         $_SESSION['session_user']['permisos'] = $res['output']['permisos'];
+        $_SESSION['session_user']['permission_keys'] = isset($res['output']['response'][0]['permission_keys'])
+            ? $res['output']['response'][0]['permission_keys']
+            : [];
+        $_SESSION['session_user']['role'] = isset($res['output']['response'][0]['role'])
+            ? $res['output']['response'][0]['role']
+            : null;
         $_SESSION['session_user']['config'] = $res['output']['config'];
         $_SESSION['session_user']['telefono_emergencia'] = $res['output']['telefono_emergencia'];
         $_SESSION['session_user']['unidad'] = $res['output']['unidad'];

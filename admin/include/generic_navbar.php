@@ -923,7 +923,8 @@
    // Determinar si el usuario puede ver todas las opciones o solo algunas
    $esSuperAdmin = ($userType == Util::SuperAdmin());
    $esManagerOStaff = ($userType == Util::Manager() || $userType == Util::Staff());
-   $esManager =  $userType == Util::Staff();
+   // Fixed: Manager = Administrador (was incorrectly comparing to Staff)
+   $esManager = ($userType == Util::Manager());
    ?>
 
    <li>
@@ -1011,14 +1012,19 @@
       <?php endif; ?>
    <?php endif; ?>
 
-   <?php if (SessionData::getPermission(40)): ?>
+   <?php if (SessionData::getPermission(40) || SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || SessionData::superAdministrador()): ?>
       <li>
          <a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false">
             <i class="fa fa-cog"></i>
             <span class="nav-text">Configuration</span>
          </a>
          <ul aria-expanded="false">
+            <?php if (SessionData::getPermission(40)): ?>
             <li><a href="./configuracion.php">Configuration</a></li>
+            <?php endif; ?>
+            <?php if (SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || SessionData::superAdministrador()): ?>
+            <li><a href="./roles_permisos.php">Roles & Permissions</a></li>
+            <?php endif; ?>
          </ul>
       </li>
    <?php endif; ?>

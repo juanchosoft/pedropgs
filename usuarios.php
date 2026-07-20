@@ -1343,7 +1343,8 @@ $modulo = 'Users';
                                       </button>
                                     <?php } ?>
 
-                                    <?php if ($permits) { ?>
+                                    <?php /* Individual permission checkboxes removed — use Roles & Permissions */ ?>
+                                    <?php if (false && $permits) { ?>
                                       <button type="button" class="btn btn-outline-info btn-sm"
                                         onclick="PERMISOS.editpermission(<?php echo $arr[$i]['id']; ?>);" title="Permits">
                                         <i class="fa fa-check"></i>
@@ -1575,6 +1576,25 @@ $modulo = 'Users';
 
               <div class="col-sm-6">
                 <div class="form-group">
+                  <label class="bmd-label-floating">Role <b class="errLbl">*</b></label>
+                  <select class="form-control" id="role_id" name="role_id">
+                    <option value="">Select role…</option>
+                    <?php
+                    require_once './admin/classes/Role.php';
+                    $rolesRes = Role::getAll([]);
+                    if (!empty($rolesRes['output']['valid'])) {
+                      foreach ($rolesRes['output']['response'] as $roleRow) {
+                        echo '<option value="' . (int)$roleRow['id'] . '">' . htmlspecialchars($roleRow['name']) . '</option>';
+                      }
+                    }
+                    ?>
+                  </select>
+                  <small class="text-muted">Permissions come from the selected role.</small>
+                </div>
+              </div>
+
+              <div class="col-sm-6">
+                <div class="form-group">
                   <label for="habilitado" class="bmd-label-floating">Enable</label>
                   <select class="form-control" id="habilitado" name="habilitado">
                     <option value="yes">Yes</option>
@@ -1636,6 +1656,7 @@ $modulo = 'Users';
     </div>
   </div>
 
+  <?php /* Legacy per-user permission modal disabled — use Roles & Permissions */ if (false): ?>
   <!-- MODAL: Permission Assignment -->
   <div class="modal fade" id="myModalPermisos" tabindex="-1" role="dialog" aria-labelledby="lbcondiciones_rgpd" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -1696,6 +1717,7 @@ $modulo = 'Users';
       </div>
     </div>
   </div>
+  <?php endif; ?>
 
   <?php include './admin/include/gerenic_footer.php'; ?>
   <?php include './admin/include/generic_search.php'; ?>
@@ -1705,7 +1727,7 @@ $modulo = 'Users';
 
   <script type="text/javascript" src="./admin/js/lib/data-md5.js"></script>
   <script type="text/javascript" src="./admin/js/usuario.js"></script>
-  <script type="text/javascript" src="./admin/js/permisos.js"></script>
+  <?php /* permisos.js disabled with per-user permission modal */ ?>
 
   <script>
     window.PGS_EMPLOYEE_REST_DAYS = <?php echo json_encode($employeeRestDaysByEmployeeId, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;

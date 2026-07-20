@@ -386,7 +386,7 @@
         $userType = SessionData::getUserType();
         $esSuperAdmin = ($userType == Util::SuperAdmin());
         $esManagerOStaff = ($userType == Util::Manager() || $userType == Util::Staff());
-        $esManager =  $userType == Util::Staff();
+        $esManager = ($userType == Util::Manager());
       ?>
 
       <li class="menu-item">
@@ -429,6 +429,16 @@
           <div class="icon-box"><i class="fa fa-calendar"></i></div>
           <div class="menu-label-movil">Calendar</div>
           <small>Schedule</small>
+        </a>
+      </li>
+      <?php endif; ?>
+
+      <?php if (SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || SessionData::superAdministrador()): ?>
+      <li class="menu-item">
+        <a href="roles_permisos.php">
+          <div class="icon-box"><i class="fa fa-shield"></i></div>
+          <div class="menu-label-movil">Roles</div>
+          <small>Permissions</small>
         </a>
       </li>
       <?php endif; ?>

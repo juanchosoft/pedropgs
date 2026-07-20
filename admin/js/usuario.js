@@ -77,6 +77,7 @@ var USUARIO = {
             $("#apellido").val(res.apellido).trigger("change");
             $("#celular").val(res.celular).trigger("change");
             $("#tipo").val(res.tipo).trigger("change");
+            $("#role_id").val(res.role_id || "").trigger("change");
             $("#employee_id").val(empId);
             $("#emp_mode").val(empId !== "" ? "keep" : "");
             $("#nickname").val(res.nickname).trigger("change");
@@ -89,7 +90,6 @@ var USUARIO = {
                 : (res.tbl_unidad_id > 0 ? [res.tbl_unidad_id] : []);
             $("#tbl_unidad_id").val(unidadIds).trigger("change");
             $("#habilitado").val(res.habilitado).trigger("change");
-            $("#tipo").val(res.tipo).trigger("change");
             $("#myModal").modal();
 
             // Asociación usuario ↔ empleado (sin Select2 si ya está vinculado)
@@ -116,6 +116,11 @@ var USUARIO = {
             $("#apellido").val() == ""
         ) {
             swal("warning", msj, "error");
+            bValid = false;
+            return;
+        }
+        if (!$("#role_id").val()) {
+            swal("warning", "Please select a Role.", "error");
             bValid = false;
             return;
         }
@@ -216,8 +221,8 @@ var USUARIO = {
         q.tbl_unidad_id = $("#tbl_unidad_id").val();
         q.habilitado = $("#habilitado").val();
         q.tipo = $("#tipo").val();
-
-        // Asociación: tec_usuarios.employee_id = tec_employee.cc
+        q.role_id = $("#role_id").val() || "";
+        q.habilitado = $("#habilitado").val();
         q.es_empleado = $("#es_empleado").is(":checked") ? 1 : 0;
         q.emp_mode = $("#emp_mode").val() || "";
         q.employee_id = $("#employee_id").val() || "";
