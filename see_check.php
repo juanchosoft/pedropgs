@@ -4,11 +4,11 @@ include './admin/classes/Check.php';
 include './admin/classes/Unidades.php';
 
 //Permisos
-$view = SessionData::getPermission(7);
-$create = SessionData::getPermission(7);
-$edit = SessionData::getPermission(7);
-$delete = SessionData::getPermission(7);
-$enable = SessionData::getPermission(7);
+$view = SessionData::getPermission(21);
+$create = SessionData::getPermission(17);
+$edit = SessionData::getPermission(20);
+$delete = SessionData::getPermission(18);
+$enable = SessionData::getPermission(19);
 //Validación
 if (!$view) {
   require 'permiso_denegado.php';

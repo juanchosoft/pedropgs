@@ -382,11 +382,19 @@
 
     <ul class="menu-grid">
       <?php
-        $userUnidad = SessionData::getUnidadUser();
-        $userType = SessionData::getUserType();
-        $esSuperAdmin = ($userType == Util::SuperAdmin());
-        $esManagerOStaff = ($userType == Util::Manager() || $userType == Util::Staff());
-        $esManager = ($userType == Util::Manager());
+        $userUnidades = SessionData::getUnidadesUser();
+        $esSuperAdmin = SessionData::superAdministrador();
+        $canReports = SessionData::getPermission(7)
+          || SessionData::getPermission(9)
+          || SessionData::getPermission(21)
+          || SessionData::getPermission(22);
+        $canEmployees = SessionData::getPermission(27)
+          || SessionData::getPermission(33)
+          || SessionData::getPermission(45);
+        $canConfig = SessionData::getPermission(40)
+          || SessionData::hasPermission('configuracion.roles.view')
+          || SessionData::hasPermission('configuracion.roles.manage')
+          || $esSuperAdmin;
       ?>
 
       <li class="menu-item">
@@ -397,6 +405,7 @@
         </a>
       </li>
 
+      <?php if ($canReports): ?>
       <li class="menu-item">
         <a href="javascript:void(0)" onclick="abrirModal('REPORTS')">
           <div class="icon-box"><i class="fa fa-file-text-o"></i></div>
@@ -404,6 +413,7 @@
           <small>Checklist & jobs</small>
         </a>
       </li>
+      <?php endif; ?>
 
       <?php if (SessionData::getPermission(12)): ?>
       <li class="menu-item">
@@ -415,7 +425,17 @@
       </li>
       <?php endif; ?>
 
-      <?php if (SessionData::getPermission(27)): ?>
+      <?php if (SessionData::getPermission(1)): ?>
+      <li class="menu-item">
+        <a href="usuarios.php">
+          <div class="icon-box"><i class="fa fa-user-circle-o"></i></div>
+          <div class="menu-label-movil">User</div>
+          <small>Accounts</small>
+        </a>
+      </li>
+      <?php endif; ?>
+
+      <?php if ($canEmployees): ?>
       <li class="menu-item">
         <a href="javascript:void(0)" onclick="abrirModal('EMPLOYEES')">
           <div class="icon-box"><i class="fa fa-address-card-o"></i></div>
@@ -423,7 +443,9 @@
           <small>Time & uniforms</small>
         </a>
       </li>
+      <?php endif; ?>
 
+      <?php if (SessionData::getPermission(22)): ?>
       <li class="menu-item">
         <a href="calendar.php">
           <div class="icon-box"><i class="fa fa-calendar"></i></div>
@@ -433,12 +455,12 @@
       </li>
       <?php endif; ?>
 
-      <?php if (SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || SessionData::superAdministrador()): ?>
+      <?php if ($canConfig): ?>
       <li class="menu-item">
-        <a href="roles_permisos.php">
-          <div class="icon-box"><i class="fa fa-shield"></i></div>
-          <div class="menu-label-movil">Roles</div>
-          <small>Permissions</small>
+        <a href="javascript:void(0)" onclick="abrirModal('CONFIGURATION')">
+          <div class="icon-box"><i class="fa fa-cog"></i></div>
+          <div class="menu-label-movil">Configuration</div>
+          <small>System</small>
         </a>
       </li>
       <?php endif; ?>
@@ -499,31 +521,51 @@
     if (titulo === "EMPLOYEES") {
       document.getElementById("modalContent").innerHTML = `
         <ul class="modal-list">
+          <?php if (SessionData::getPermission(27)): ?>
           <li><a href="./empleados.php">View Employees <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::getPermission(33)): ?>
           <li><a href="./reloj.php">Record time <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::getPermission(45)): ?>
           <li><a href="./informe_salidas.php">Entry - Exit <span class="chev">›</span></a></li>
           <li><a href="./uniformes.php">Uniforms <span class="chev">›</span></a></li>
+          <?php endif; ?>
         </ul>
       `;
     } else if (titulo === "REPORTS") {
       document.getElementById("modalContent").innerHTML = `
         <ul class="modal-list">
-          <?php if (($esSuperAdmin || $esManager) && SessionData::getPermission(7)): ?>
+          <?php if (SessionData::getPermission(7)): ?>
             <li><a href="./report.php">Enter Report <span class="chev">›</span></a></li>
           <?php endif; ?>
-
-          <?php if (($esSuperAdmin || $esManager) && SessionData::getPermission(9)): ?>
+          <?php if (SessionData::getPermission(9)): ?>
             <li><a href="./report-list.php">Edit Report <span class="chev">›</span></a></li>
           <?php endif; ?>
-
-          <?php if (($esSuperAdmin || $esManager) && SessionData::getPermission(21)): ?>
+          <?php if (SessionData::getPermission(21)): ?>
             <li><a href="./check_list.php">Check List Report <span class="chev">›</span></a></li>
           <?php endif; ?>
-
-          <?php if (($esSuperAdmin || $esManagerOStaff) && SessionData::getPermission(22)): ?>
+          <?php if (($esSuperAdmin || in_array(7, $userUnidades, true)) && SessionData::getPermission(21)): ?>
+            <li><a href="./check_list_villasol.php">Check List Report Villasol <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (($esSuperAdmin || in_array(7, $userUnidades, true)) && SessionData::getPermission(22)): ?>
+            <li><a href="./check_report_list_villasol.php">Show Check List Report Villasol <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::getPermission(22)): ?>
             <li><a href="./check_report_list.php">Show Check List Report <span class="chev">›</span></a></li>
             <li><a href="./calendar.php">Calendar <span class="chev">›</span></a></li>
             <li><a href="./report-list-group.php">Report List Group Download <span class="chev">›</span></a></li>
+          <?php endif; ?>
+        </ul>
+      `;
+    } else if (titulo === "CONFIGURATION") {
+      document.getElementById("modalContent").innerHTML = `
+        <ul class="modal-list">
+          <?php if (SessionData::getPermission(40)): ?>
+            <li><a href="./configuracion.php">Configuration <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || $esSuperAdmin): ?>
+            <li><a href="./roles_permisos.php">Roles & Permissions <span class="chev">›</span></a></li>
           <?php endif; ?>
         </ul>
       `;
@@ -555,4 +597,4 @@
       else cerrarMenu();
     }
   });
-</script>menu-label-movil
+</script>

@@ -4,8 +4,10 @@
  * '' = session only (login / public helpers).
  */
 return [
-    'delete_deport' => 'configuracion.sistema.delete',
-    'get_deport' => 'configuracion.sistema.view',
+    'delete_deport' => 'reportes.activities.delete',
+    'get_deport' => ['reportes.activities.view', 'reportes.activities.update'],
+    'report_last_unfinished' => 'reportes.activities.update',
+    'report_finalize' => 'reportes.activities.update',
     'pms_Departamentoget' => 'configuracion.sistema.view',
     'pms_catdelete' => 'reportes.daily.delete',
     'pms_catenable' => 'reportes.daily.enable',
@@ -72,7 +74,7 @@ return [
     'pms_reqsearch' => 'inventario.inventario.view',
     'pms_salidasave' => 'empleados.salidas.create',
     'pms_save_combo_producto' => 'inventario.inventario.update',
-    'pms_saveentradasalida' => 'inventario.inventario.update',
+    'pms_saveentradasalida' => 'tiempo.reloj.create',
     'pms_unidelete' => 'configuracion.sistema.delete',
     'pms_unienable' => 'configuracion.sistema.enable',
     'pms_uniget' => 'configuracion.sistema.view',
@@ -93,7 +95,7 @@ return [
     'pms_zones_delete' => 'reportes.activities.delete',
     'pms_zones_get' => 'reportes.activities.view',
     'pms_zones_save' => 'reportes.activities.update',
-    'updateFields' => 'configuracion.sistema.update',
+    'updateFields' => 'reportes.activities.update',
     'roleslist' => 'configuracion.roles.view',
     'roleget' => 'configuracion.roles.view',
     'rolesave' => 'configuracion.roles.manage',

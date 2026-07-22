@@ -5,10 +5,10 @@ include './admin/classes/Zona.php';
 //Permisos
 $view = SessionData::getPermission(7);
 $create = SessionData::getPermission(8);
-$edit = SessionData::getPermission(19);
+$edit = SessionData::getPermission(9);
 $delete = SessionData::getPermission(10);
 //Validación
-if (!$view) {
+if (!$view && !$edit) {
     require 'permiso_denegado.php';
 }
 $modulo = 'Activities report list - Edit Report';
@@ -106,8 +106,10 @@ if ($isvalid) {
                                     <table id="dynamictable" class="table table-hover table-responsive-sm">
                                         <thead>
                                             <th>ITEM</th>
+                                            <th>Property / Unit</th>
                                             <th>Activities</th>
                                             <th>Observations</th>
+                                            <th>Status</th>
                                             <th>Date</th>
                                             <th>Actions</th>
                                         </thead>
@@ -116,20 +118,42 @@ if ($isvalid) {
                                             $c = count($arrReportData);
                                             if ($isvalid) {
                                                 for ($i = 0; $i < $c; $i++) {
-
+                                                    $estadoRow = $arrReportData[$i]['estado'] ?? '';
+                                                    $canEditRow = Report::isEditable($estadoRow);
+                                                    $unidadNombre = $arrReportData[$i]['unidad_nombre']
+                                                        ?? $arrReportData[$i]['propiedad_nombre']
+                                                        ?? $arrReportData[$i]['unidad_usuario_nombre']
+                                                        ?? '';
                                             ?>
                                             <tr>
                                                 <td class="text-primary"><?php echo $arrReportData[$i]['id']; ?></td>
                                                 <td class="text-primary">
-                                                    <?php echo $arrReportData[$i]['actividades']; ?></td>
+                                                    <?php echo htmlspecialchars($unidadNombre !== '' ? $unidadNombre : '—'); ?>
+                                                </td>
                                                 <td class="text-primary">
-                                                    <?php echo $arrReportData[$i]['observaciones']; ?></td>
+                                                    <?php echo htmlspecialchars($arrReportData[$i]['actividades']); ?></td>
+                                                <td class="text-primary">
+                                                    <?php echo htmlspecialchars($arrReportData[$i]['observaciones']); ?></td>
+                                                <td>
+                                                    <?php
+                                                    $lbl = Report::statusLabel($estadoRow);
+                                                    $badgeClass = 'badge-secondary';
+                                                    if ($estadoRow === Report::ESTADO_CREADO) {
+                                                        $badgeClass = 'badge-info';
+                                                    } elseif ($estadoRow === Report::ESTADO_PENDIENTE) {
+                                                        $badgeClass = 'badge-warning';
+                                                    } elseif ($estadoRow === Report::ESTADO_FINALIZADO) {
+                                                        $badgeClass = 'badge-success';
+                                                    }
+                                                    ?>
+                                                    <span class="badge <?php echo $badgeClass; ?>"><?php echo htmlspecialchars($lbl); ?></span>
+                                                </td>
                                                 <td class="text-primary"><?php echo $arrReportData[$i]['dtcreate']; ?>
                                                 </td>
                                                 <td>
 
                                                     <?php
-                                                            if ($edit) {
+                                                            if ($edit && $canEditRow) {
                                                             ?>
                                                     <button
                                                         onclick="REPORT.editPhotoAfter(<?php echo $arrReportData[$i]['id']; ?>);"
@@ -160,7 +184,25 @@ if ($isvalid) {
                                                         </svg>
                                                     </button>
 
+                                                    <button type="button"
+                                                        onclick="REPORT.finalize(<?php echo $arrReportData[$i]['id']; ?>);"
+                                                        class="btn btn-outline-success btn-sm"
+                                                        title="Finalize">
+                                                        Finalize
+                                                    </button>
 
+
+                                                    <?php
+                                                            }
+
+                                                            if (($view || $edit) && $estadoRow === Report::ESTADO_FINALIZADO) {
+                                                            ?>
+                                                    <button type="button"
+                                                        onclick="REPORT.viewDetail(<?php echo (int) $arrReportData[$i]['id']; ?>);"
+                                                        class="btn btn-outline-dark btn-sm"
+                                                        title="View detail">
+                                                        View detail
+                                                    </button>
                                                     <?php
                                                             }
 
@@ -244,6 +286,66 @@ if ($isvalid) {
                         class="btn btn-primary btn-rounded">Guardar</button>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal ver detalle (reportes finalizados) -->
+    <div class="modal fade" id="myModalViewDetail" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header card-header card-header-danger">
+                    <h4 class="modal-title">Report detail <span id="view_detail_item"></span></h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Status</strong></p>
+                            <p id="view_detail_estado" class="text-muted">—</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Date</strong></p>
+                            <p id="view_detail_fecha" class="text-muted">—</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Property / Unit</strong></p>
+                            <p id="view_detail_unidad" class="text-muted">—</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Zone</strong></p>
+                            <p id="view_detail_zone" class="text-muted">—</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Activities</strong></p>
+                            <p id="view_detail_actividades" class="text-muted">—</p>
+                        </div>
+                        <div class="col-md-12">
+                            <p class="mb-1"><strong>Observations</strong></p>
+                            <p id="view_detail_observaciones" class="text-muted">—</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 text-center mb-3">
+                            <p class="mb-2"><strong>Photo before</strong></p>
+                            <img id="view_detail_foto_antes" class="img-fluid rounded border"
+                                style="max-height:280px;object-fit:contain;background:#f8f9fa;"
+                                src="assets/images/no-image.png" alt="Photo before">
+                            <p id="view_detail_foto_antes_empty" class="text-muted small mt-2 d-none">No photo</p>
+                        </div>
+                        <div class="col-md-6 text-center mb-3">
+                            <p class="mb-2"><strong>Photo after</strong></p>
+                            <img id="view_detail_foto_despues" class="img-fluid rounded border"
+                                style="max-height:280px;object-fit:contain;background:#f8f9fa;"
+                                src="assets/images/no-image.png" alt="Photo after">
+                            <p id="view_detail_foto_despues_empty" class="text-muted small mt-2 d-none">No photo</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark btn-rounded" data-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>

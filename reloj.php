@@ -16,6 +16,8 @@ $enable = SessionData::getPermission(37);
 if (!$view) { require 'permiso_denegado.php'; }
 
 $modulo = 'Record Time';
+$employeeCc = SessionData::getEmployeeCc();
+$hasEmployee = $employeeCc > 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -246,6 +248,12 @@ $modulo = 'Record Time';
       transform: translateY(0);
       box-shadow: 0 6px 14px rgba(225,6,0,.20);
     }
+    .btn-send-id:disabled{
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
 
     /* Side panel (tips / status) */
     .rt-kpis{
@@ -392,21 +400,17 @@ $modulo = 'Record Time';
                                 </div>
 
                                 <div class="registerid rt-register">
-                                  <h2><span class="rt-badge">ID</span> REGISTER YOUR ID</h2>
-                                  <p class="hint">Tip: You can scan a barcode/QR or type the ID number.</p>
+                                  <h2><span class="rt-badge"><i class="fa fa-clock-o"></i></span> SEND TIME</h2>
+                                  <p class="hint">Send time to init/start your turn.</p>
+
+                                  <?php if (!$hasEmployee): ?>
+                                    <div class="alert alert-warning" style="border-radius:14px;font-weight:800;">
+                                      Ask an administrator to link your user to an employee before using the time clock.
+                                    </div>
+                                  <?php endif; ?>
 
                                   <div style="display:flex;gap:10px;">
-                                    <input
-                                      type="text"
-                                      autofocus="yes"
-                                      class="form-control"
-                                      name="cc"
-                                      id="cc"
-                                      placeholder="Enter your ID"
-                                      onKeyPress="return soloNumeros(event);"
-                                      style="flex:1;"
-                                    >
-                                    <button type="button" id="btn-send" class="btn btn-primary btn-send-id">
+                                    <button type="button" id="btn-send" class="btn btn-primary btn-send-id" style="width:100%;" <?php echo $hasEmployee ? '' : 'disabled'; ?>>
                                       Send
                                     </button>
                                   </div>
@@ -447,9 +451,8 @@ $modulo = 'Record Time';
                                   <div class="rt-kpi">
                                 <div class="k-title">
                                   Input Mode
-                                  <span class="k-chip">Manual</span>
+                                  <span class="k-chip">Automatico</span>
                                 </div>
-                                <div class="k-value">Press "Send" to validate your ID</div>
                               </div>
 
                               <div class="rt-kpi">
@@ -458,7 +461,7 @@ $modulo = 'Record Time';
                                   <span class="k-chip">1–2 sec</span>
                                 </div>
                                 <div class="k-value" style="color:#334155;font-weight:800;">
-                                  Enter your ID and wait for confirmation. Do not refresh.
+                                  Touch the button, Do not refresh
                                 </div>
                               </div>
                             </div>
@@ -485,21 +488,12 @@ $modulo = 'Record Time';
   <script type="text/javascript" src="./admin/js/reloj_entrada_salida.js"></script>
 
   <script>
-    $(document).ready(function() {
+    window.PGS_HAS_EMPLOYEE = <?php echo $hasEmployee ? 'true' : 'false'; ?>;
+    $(function () {
       $("#coords").val("");
-
-      function handleSend() {
+      $("#btn-send").on("click", function () {
         RELOJENTRADASALIDA.validate();
-      }
-
-      $("#btn-send").on("click", handleSend);
-      $("#cc").on("keydown", function(e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          handleSend();
-        }
       });
-
       $("#tzLabel").text("America/Bogota");
     });
   </script>

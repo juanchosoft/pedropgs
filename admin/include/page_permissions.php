@@ -23,10 +23,17 @@ final class PagePermissions
         'uniformes.php' => 'empleados.salidas.view',
         'productos.php' => 'reportes.activities.view',
         'report.php' => 'reportes.activities.view',
+        'report-list.php' => ['reportes.activities.view', 'reportes.activities.update'],
+        'daily_report.php' => 'reportes.daily.view',
         'daily_report_group.php' => 'reportes.daily.view',
+        'daily_report_view.php' => 'reportes.daily.view',
+        'daily_report_view_group.php' => 'reportes.daily.view',
+        'categorias.php' => 'reportes.daily.view',
         'check_list.php' => 'checklist.checklist.view',
         'check_list_villasol.php' => 'checklist.checklist.view',
-        'main.php' => 'dashboard.main.view',
+        'see_check.php' => 'checklist.checklist.view',
+        'check_report_list.php' => 'checklist.checklist.view',
+        // main.php: home after login — any authenticated user (session checked elsewhere)
     ];
 
     public static function guardCurrentRequest(): void

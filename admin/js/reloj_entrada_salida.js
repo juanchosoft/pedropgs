@@ -48,29 +48,30 @@ function tryAutoValidate() {
 
 var RELOJENTRADASALIDA = {
     validate() {
-        var coords = $("#coords").val();
-        if ($("#cc").val() == "") return;
+        if (!window.PGS_HAS_EMPLOYEE) {
+            swal("Employee required", "Your user is not linked to an employee. Ask an administrator to associate your account.", "error");
+            return;
+        }
 
+        var coords = $("#coords").val();
         if (!coords || coords == '0,0') {
-            if ($("#cc").val() != "") {
-                requestLocation();
-                setTimeout(function() {
-                    var c = $("#coords").val();
-                    if (c && c != '0,0') {
-                        RELOJENTRADASALIDA.validateEntradaSalida();
-                    } else {
-                        requestLocation();
-                        setTimeout(function() {
-                            var c2 = $("#coords").val();
-                            if (c2 && c2 != '0,0') {
-                                RELOJENTRADASALIDA.validateEntradaSalida();
-                            } else {
-                                swal("Location required", "Could not obtain your location. Check that location is enabled and try again.", "error");
-                            }
-                        }, 3000);
-                    }
-                }, 3000);
-            }
+            requestLocation();
+            setTimeout(function() {
+                var c = $("#coords").val();
+                if (c && c != '0,0') {
+                    RELOJENTRADASALIDA.validateEntradaSalida();
+                } else {
+                    requestLocation();
+                    setTimeout(function() {
+                        var c2 = $("#coords").val();
+                        if (c2 && c2 != '0,0') {
+                            RELOJENTRADASALIDA.validateEntradaSalida();
+                        } else {
+                            swal("Location required", "Could not obtain your location. Check that location is enabled and try again.", "error");
+                        }
+                    }, 3000);
+                }
+            }, 3000);
             return;
         }
 
@@ -79,14 +80,12 @@ var RELOJENTRADASALIDA = {
     validateEntradaSalida: function () {
         q = {};
         q.op = "pms_saveentradasalida";
-        q.cc = $('#cc').val();
         q.coords = $("#coords").val();
-        UTIL.callAjaxRqst(q, RELOJENTRADASALIDA.savedataHandler);
+        UTIL.callAjaxRqstPOST(q, RELOJENTRADASALIDA.savedataHandler);
     },
     savedataHandler: function (data) {
         UTIL.cursorNormal();
         if (data.output.valid) {
-            $("#cc").val('');
             $("#coords").val('');
             requestLocation();
             swal("Important", data.output.response, "success");

@@ -3,11 +3,11 @@ require './admin/include/generic_classes.php';
 include './admin/classes/DailyReport.php';
 
 //Permisos
-$view = SessionData::getPermission(7);
-$create = SessionData::getPermission(7);
-$edit = SessionData::getPermission(7);
-$delete = SessionData::getPermission(7);
-$enable = SessionData::getPermission(7);
+$view = SessionData::getPermission(22);
+$create = SessionData::getPermission(23);
+$edit = SessionData::getPermission(24);
+$delete = SessionData::getPermission(25);
+$enable = SessionData::getPermission(26);
 //Validación
 if (!$view) {
   require 'permiso_denegado.php';

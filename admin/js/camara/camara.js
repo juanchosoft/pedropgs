@@ -1,215 +1,219 @@
 var localstream, canvas, video, cxt;
 
-
 const tieneSoporteUserMedia = () =>
-    !!(navigator.getUserMedia || (navigator.mozGetUserMedia || navigator.mediaDevices.getUserMedia) || navigator.webkitGetUserMedia || navigator.msGetUserMedia)
-
-function _getUserMedia(){
-    return (navigator.getUserMedia || (navigator.mozGetUserMedia ||  navigator.mediaDevices.getUserMedia) || navigator.webkitGetUserMedia || navigator.msGetUserMedia).apply(navigator, arguments);
-}
-
+    !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ||
+    !!(navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia || navigator.msGetUserMedia);
 
 let $listaDeDispositivos = document.querySelector("#listaDeDispositivos");
-
-const limpiarSelect = () => {
-    for (let x = $listaDeDispositivos.options.length - 1; x >= 0; x--)
-        $listaDeDispositivos.remove(x);
-};
-const obtenerDispositivos = () => navigator
-    .mediaDevices
-    .enumerateDevices();
-
-const llenarSelectConDispositivosDisponibles = () => {
-    limpiarSelect();
-    obtenerDispositivos()
-        .then(dispositivos => {
-            const dispositivosDeVideo = [];
-            dispositivos.forEach(dispositivo => {
-                const tipo = dispositivo.kind;
-                if (tipo === "videoinput") {
-                    dispositivosDeVideo.push(dispositivo);
-                }
-            });
-
-            if (dispositivosDeVideo.length > 0) {
-                dispositivosDeVideo.forEach(dispositivo => {
-                    const option = document.createElement('option');
-                    option.value = dispositivo.deviceId;
-                    option.text = dispositivo.label;
-                    $listaDeDispositivos.appendChild(option);
-                });
-            }
-        });
-}
-
-$video = document.getElementById("video");
+let $video = document.getElementById("video");
 let currentStream;
 let VIDEO_DATA = false;
+let cameraRequestInFlight = false;
 
 function stopMediaTracks(stream) {
-  stream.getTracks().forEach(track => {
-    track.stop();
-  });
+    if (!stream) return;
+    stream.getTracks().forEach(function (track) {
+        track.stop();
+    });
 }
 
-const mostrarStream = idDeDispositivo => {
-
-    if (typeof currentStream !== 'undefined') {
+function stopCurrentStream() {
+    if (typeof currentStream !== "undefined" && currentStream) {
         stopMediaTracks(currentStream);
-      }
-    const videoConstraints = {};
-    if (idDeDispositivo === '') {
-        videoConstraints.facingMode = 'environment';
-    } else {
-        videoConstraints.deviceId = { exact: idDeDispositivo };
+        currentStream = undefined;
     }
-    const constraints = {
+    if ($video) {
+        try {
+            $video.pause();
+        } catch (e) {}
+        $video.srcObject = null;
+    }
+    VIDEO_DATA = false;
+}
+
+function updateCameraSelectVisibility() {
+    if (!$listaDeDispositivos) return;
+    var count = $listaDeDispositivos.options.length;
+    if (count > 1) {
+        $("#selectcamdevice").css("display", "block");
+    } else {
+        $("#selectcamdevice").css("display", "none");
+    }
+}
+
+function resetToNoPicture() {
+    stopCurrentStream();
+    $(".defaultavatar").removeClass("none");
+    $("#video").addClass("none");
+    $("#selectcamdevice").css("display", "none");
+    $("#radiosfoto").prop("checked", true);
+    $("#radiotfoto").prop("checked", false);
+}
+
+function handleCameraDenied(error) {
+    resetToNoPicture();
+    var msg =
+        "Camera permission is required to take a picture. Please allow camera access and try again.";
+    if (error && (error.name === "NotAllowedError" || error.name === "PermissionDeniedError")) {
+        msg =
+            "Camera permission was denied. Enable camera access for this site in your browser settings, then select “Take a picture” again.";
+    } else if (error && error.name === "NotFoundError") {
+        msg = "No camera was found on this device.";
+    } else if (error && error.message) {
+        msg = error.message;
+    }
+    if (typeof swal === "function") {
+        swal("Camera required", msg, "error");
+    } else {
+        alert(msg);
+    }
+}
+
+function gotDevices(mediaDevices) {
+    if (!$listaDeDispositivos) return;
+    $listaDeDispositivos.innerHTML = "";
+    var count = 1;
+    var preferredId = null;
+    var currentId =
+        currentStream && currentStream.getVideoTracks && currentStream.getVideoTracks()[0]
+            ? currentStream.getVideoTracks()[0].getSettings().deviceId
+            : null;
+
+    mediaDevices.forEach(function (mediaDevice) {
+        if (mediaDevice.kind !== "videoinput") return;
+        var option = document.createElement("option");
+        option.value = mediaDevice.deviceId;
+        var label = mediaDevice.label || "Camera " + count++;
+        option.appendChild(document.createTextNode(label));
+        $listaDeDispositivos.appendChild(option);
+
+        var lower = (mediaDevice.label || "").toLowerCase();
+        if (lower.indexOf("back") !== -1 || lower.indexOf("trasera") !== -1) {
+            preferredId = mediaDevice.deviceId;
+        }
+    });
+
+    if (currentId) {
+        $listaDeDispositivos.value = currentId;
+    } else if (preferredId) {
+        $listaDeDispositivos.value = preferredId;
+    }
+
+    updateCameraSelectVisibility();
+}
+
+const mostrarStream = function (idDeDispositivo) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        handleCameraDenied({ message: "Your browser does not support camera access." });
+        return;
+    }
+
+    if (typeof currentStream !== "undefined") {
+        stopMediaTracks(currentStream);
+        currentStream = undefined;
+    }
+
+    var videoConstraints = {};
+    if (!idDeDispositivo) {
+        videoConstraints = { facingMode: { ideal: "environment" } };
+    } else {
+        videoConstraints = { deviceId: { exact: idDeDispositivo } };
+    }
+
+    var constraints = {
         video: videoConstraints,
         audio: false
     };
 
+    cameraRequestInFlight = true;
     navigator.mediaDevices
-      .getUserMedia(constraints)
-      .then(stream => {
-        currentStream = stream;
-        VIDEO_DATA = true;
-        $video.srcObject = stream;
-        return navigator.mediaDevices.enumerateDevices();
-      })
-      .then(gotDevices)
-      .catch(error => {
-        VIDEO_DATA = false;
-      });
+        .getUserMedia(constraints)
+        .catch(function (err) {
+            // Si falla con deviceId exacto, reintentar con facingMode para volver a pedir permiso
+            if (idDeDispositivo) {
+                return navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" } },
+                    audio: false
+                });
+            }
+            throw err;
+        })
+        .then(function (stream) {
+            cameraRequestInFlight = false;
+            currentStream = stream;
+            localstream = stream;
+            VIDEO_DATA = true;
+            $video.srcObject = stream;
+            return $video.play().catch(function () {
+                return null;
+            });
+        })
+        .then(function () {
+            return navigator.mediaDevices.enumerateDevices();
+        })
+        .then(function (devices) {
+            gotDevices(devices);
+        })
+        .catch(function (error) {
+            cameraRequestInFlight = false;
+            VIDEO_DATA = false;
+            handleCameraDenied(error);
+        });
+};
 
-    // _getUserMedia({
-    //         video: {
-    //             // Justo aquí indicamos cuál dispositivo usar
-    //             deviceId: idDeDispositivo,
-    //         }
-    //     },
-    //     (streamObtenido) => {
-    //         // Aquí ya tenemos permisos, ahora sí llenamos el select,
-    //         // pues si no, no nos daría el nombre de los dispositivos
-    //         // llenarSelectConDispositivosDisponibles();
-
-    //         // Escuchar cuando seleccionen otra opción y entonces llamar a esta función
-    //         $listaDeDispositivos.onchange = () => {
-    //             // Detener el stream
-    //             if (stream) {
-    //                 stream.getTracks().forEach(function(track) {
-    //                     track.stop();
-    //                 });
-    //             }
-    //             // Mostrar el nuevo stream con el dispositivo seleccionado
-    //             mostrarStream($listaDeDispositivos.value);
-    //         }
-
-    //         // Simple asignación
-    //         stream = streamObtenido;
-
-    //         // Mandamos el stream de la cámara al elemento de vídeo
-    //         $video.srcObject = stream;
-    //         $video.play();
-    //     }, (error) => {
-    //         console.log("Permiso denegado o error: ", error);
-    //     });
-}
-
-
-$("#listaDeDispositivos").on('change', function(event) {
-    // alert($listaDeDispositivos.value);
-    // Mostrar el nuevo stream con el dispositivo seleccionado
-    mostrarStream($listaDeDispositivos.value);
+$("#listaDeDispositivos").on("change", function () {
+    var selected = $listaDeDispositivos.value;
+    if (selected) {
+        mostrarStream(selected);
+    }
 });
 
-// $listaDeDispositivos.onchange = () => {
-//     // Detener el stream
-//     if (stream) {
-//         stream.getTracks().forEach(function(track) {
-//             track.stop();
-//         });
-//     }
-//     alert($listaDeDispositivos.value);
-//     // Mostrar el nuevo stream con el dispositivo seleccionado
-//     mostrarStream($listaDeDispositivos.value);
-// }
-
+/**
+ * Siempre solicita permiso de cámara al elegir “Take a picture”.
+ * No depende de enumerateDevices previo (sin permiso a veces no lista cámaras).
+ */
 function turnOnCamera() {
-
-    // llenarSelectConDispositivosDisponibles();
-
-    obtenerDispositivos().then(dispositivos => {
-        // Vamos a filtrarlos y guardar aquí los de vídeo
-        const dispositivosDeVideo = [];
-
-        // Recorrer y filtrar
-        dispositivos.forEach(function(dispositivo) {
-            const tipo = dispositivo.kind;
-            if (tipo === "videoinput") {
-                dispositivosDeVideo.push(dispositivo);
-            }
-        });
-
-        // Vemos si encontramos algún dispositivo, y en caso de que si, entonces llamamos a la función
-        // y le pasamos el id de dispositivo
-        if (dispositivosDeVideo.length > 0) {
-            // Mostrar stream con el ID del primer dispositivo, luego el usuario puede cambiar
-            // alert(dispositivosDeVideo[ (dispositivosDeVideo.length - 1) ].deviceId);
-            mostrarStream(dispositivosDeVideo[ (dispositivosDeVideo.length - 1) ].deviceId);
-        }
-    });
+    if (!tieneSoporteUserMedia()) {
+        handleCameraDenied({ message: "Your browser does not support camera access." });
+        return;
+    }
+    // Forzar petición de permiso cada vez que se elige Take a picture
+    mostrarStream("");
 }
-
-
 
 function turnOffCamera() {
-    video.pause();
-    video.srcObject = null;
-    localstream.getTracks()[0].stop();
+    stopCurrentStream();
 }
 
-$("#radiotfoto").click(function() {
+$("#radiotfoto").on("click change", function () {
+    if (!$("#radiotfoto").is(":checked")) return;
+
     $(".defaultavatar").addClass("none");
     $("#subirfoto").addClass("none");
     $("#video").removeClass("none");
-    $("#selectcamdevice").css("display","block");
+    // El select de cámaras solo se muestra si hay más de una (tras permiso)
+    $("#selectcamdevice").css("display", "none");
     turnOnCamera();
     if ($("#subirfoto").length) {
         document.getElementById("subirfoto").value = null;
     }
 });
 
-$("#radiosfoto").click(function() {
+$("#radiosfoto").on("click change", function () {
+    if (!$("#radiosfoto").is(":checked")) return;
     $("#subirfoto").removeClass("none");
     $("#video").addClass("none");
+    $("#selectcamdevice").css("display", "none");
+    $(".defaultavatar").removeClass("none");
     turnOffCamera();
 });
-// Función para capturar la imagen con calidad reducida
 
-// Función para capturar la imagen con calidad reducida fin
-function gotDevices(mediaDevices) {
-  $listaDeDispositivos.innerHTML = '';
-  // $listaDeDispositivos.appendChild(document.createElement('option'));
-  let count = 1;
-  var cammeraId = null;
-  mediaDevices.forEach(mediaDevice => {
-    // console.log("Se ejecuta");
-    if (mediaDevice.kind === 'videoinput') {
-      const option = document.createElement('option');
-      option.value = mediaDevice.deviceId;
-      const label = mediaDevice.label || `Camera ${count++}`;
-      const textNode = document.createTextNode(label);
-      option.appendChild(textNode);
-      $listaDeDispositivos.appendChild(option);
-      if(count == 1){
-        cammeraId = mediaDevice.deviceId;
-      }
-      if(mediaDevice.label.toLowerCase().indexOf("back") != -1 || mediaDevice.label.toLowerCase().indexOf("trasera") != -1 ){
-        cammeraId = mediaDevice.deviceId;
-        $listaDeDispositivos.value = mediaDevice.deviceId;
-      }
-    }
-  });
+function hasActiveCameraStream() {
+    if (!VIDEO_DATA || !$video || !$video.srcObject) return false;
+    var stream = $video.srcObject;
+    if (!stream.getVideoTracks) return false;
+    var tracks = stream.getVideoTracks();
+    return tracks.length > 0 && tracks.some(function (t) {
+        return t.readyState === "live";
+    });
 }
-
-navigator.mediaDevices.enumerateDevices().then(gotDevices);

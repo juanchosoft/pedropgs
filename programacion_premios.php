@@ -2,12 +2,12 @@
 require './admin/include/generic_classes.php';
 include './admin/classes/Premios.php';
 
-//Permisos
-$view = SessionData::getPermission(26);
-$create = SessionData::getPermission(21);
+//Permisos (Daily Report)
+$view = SessionData::getPermission(22);
+$create = SessionData::getPermission(23);
 $edit = SessionData::getPermission(24);
-$delete = SessionData::getPermission(22);
-$enable = SessionData::getPermission(23);
+$delete = SessionData::getPermission(25);
+$enable = SessionData::getPermission(26);
 $modulo = 'Programación sorteos';
 
 //Validación

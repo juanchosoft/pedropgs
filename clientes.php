@@ -6,9 +6,9 @@ include './admin/classes/Unidades.php';
 //Permisos
 $view = SessionData::getPermission(12);
 $create = SessionData::getPermission(13);
-$edit = SessionData::getPermission(16);
+$edit = SessionData::getPermission(15);
 $delete = SessionData::getPermission(14);
-$enable = SessionData::getPermission(15);
+$enable = SessionData::getPermission(16);
 //Validación
 if (!$view) {
   require 'permiso_denegado.php';

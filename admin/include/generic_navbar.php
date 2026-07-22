@@ -916,56 +916,51 @@
    </li>
 
    <?php
-   $userUnidad   = SessionData::getUnidadUser();
    $userUnidades = SessionData::getUnidadesUser();
-   $userType     = SessionData::getUserType();
-
-   // Determinar si el usuario puede ver todas las opciones o solo algunas
-   $esSuperAdmin = ($userType == Util::SuperAdmin());
-   $esManagerOStaff = ($userType == Util::Manager() || $userType == Util::Staff());
-   // Fixed: Manager = Administrador (was incorrectly comparing to Staff)
-   $esManager = ($userType == Util::Manager());
+   $esSuperAdmin = SessionData::superAdministrador();
+   $canReports = SessionData::getPermission(7)
+      || SessionData::getPermission(9)
+      || SessionData::getPermission(21)
+      || SessionData::getPermission(22);
+   $canEmployees = SessionData::getPermission(27)
+      || SessionData::getPermission(33)
+      || SessionData::getPermission(45);
+   $canConfig = SessionData::getPermission(40)
+      || SessionData::hasPermission('configuracion.roles.view')
+      || SessionData::hasPermission('configuracion.roles.manage')
+      || $esSuperAdmin;
    ?>
 
+   <?php if ($canReports): ?>
    <li>
       <a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false">
          <i class="fa fa-hand-pointer-o"></i>
          <span class="nav-text">Reports</span>
       </a>
-
       <ul aria-expanded="false">
-
-         <?php if (($esSuperAdmin  || $esManager)  && SessionData::getPermission(7)): ?>
+         <?php if (SessionData::getPermission(7)): ?>
             <li><a href="./report.php">Enter Report</a></li>
          <?php endif; ?>
-
-         <?php if (($esSuperAdmin  || $esManager)  && SessionData::getPermission(9)): ?>
+         <?php if (SessionData::getPermission(9)): ?>
             <li><a href="./report-list.php">Edit Report</a></li>
          <?php endif; ?>
-
-         <?php if (($esSuperAdmin  || $esManager) && SessionData::getPermission(21)): ?>
+         <?php if (SessionData::getPermission(21)): ?>
             <li><a href="./check_list.php">Check List Report</a></li>
          <?php endif; ?>
-
-         <?php if (($esSuperAdmin || in_array(7, $userUnidades)) && SessionData::getPermission(21)): ?>
+         <?php if (($esSuperAdmin || in_array(7, $userUnidades, true)) && SessionData::getPermission(21)): ?>
             <li><a href="./check_list_villasol.php">Check List Report Villasol</a></li>
          <?php endif; ?>
-
-         <?php if (($esSuperAdmin || in_array(7, $userUnidades)) && SessionData::getPermission(22)): ?>
+         <?php if (($esSuperAdmin || in_array(7, $userUnidades, true)) && SessionData::getPermission(22)): ?>
             <li><a href="./check_report_list_villasol.php">Show Check List Report Villasol</a></li>
          <?php endif; ?>
-
-         <?php if (($esSuperAdmin  || $esManagerOStaff) && SessionData::getPermission(22)): ?>
+         <?php if (SessionData::getPermission(22)): ?>
             <li><a href="./check_report_list.php">Show Check List Report</a></li>
             <li><a href="./calendar.php">Calendar</a></li>
-         <?php endif; ?>
-
-         <?php if (($esSuperAdmin  || $esManagerOStaff) && SessionData::getPermission(22)): ?>
             <li><a href="./report-list-group.php">Report List Group Download</a></li>
          <?php endif; ?>
-
       </ul>
    </li>
+   <?php endif; ?>
 
    <?php if (SessionData::getPermission(12)): ?>
       <li>
@@ -988,31 +983,28 @@
       </li>
    <?php endif; ?>
 
-   <?php if (SessionData::getPermission(33)): ?>
-      <?php if ($esSuperAdmin || $userType == Util::Manager()): ?>
+   <?php if ($canEmployees): ?>
       <li>
          <a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false">
             <i class="fa fa-address-card-o"></i>
             <span class="nav-text">Employees</span>
          </a>
          <ul aria-expanded="false">
+            <?php if (SessionData::getPermission(27)): ?>
             <li><a href="./empleados.php">View Employees</a></li>
+            <?php endif; ?>
+            <?php if (SessionData::getPermission(33)): ?>
             <li><a href="./reloj.php">Record time</a></li>
+            <?php endif; ?>
+            <?php if (SessionData::getPermission(45)): ?>
             <li><a href="./informe_salidas.php">Entry - Exit</a></li>
             <li><a href="./uniformes.php">Uniforms</a></li>
+            <?php endif; ?>
          </ul>
       </li>
-      <?php else: ?>
-      <li>
-         <a href="./reloj.php" class="ai-icon" aria-expanded="false">
-            <i class="fa fa-address-card-o"></i>
-            <span class="nav-text">Record time</span>
-         </a>
-      </li>
-      <?php endif; ?>
    <?php endif; ?>
 
-   <?php if (SessionData::getPermission(40) || SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || SessionData::superAdministrador()): ?>
+   <?php if ($canConfig): ?>
       <li>
          <a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false">
             <i class="fa fa-cog"></i>
@@ -1022,7 +1014,7 @@
             <?php if (SessionData::getPermission(40)): ?>
             <li><a href="./configuracion.php">Configuration</a></li>
             <?php endif; ?>
-            <?php if (SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || SessionData::superAdministrador()): ?>
+            <?php if (SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || $esSuperAdmin): ?>
             <li><a href="./roles_permisos.php">Roles & Permissions</a></li>
             <?php endif; ?>
          </ul>

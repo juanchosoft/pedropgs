@@ -7,12 +7,11 @@ include './admin/classes/Oficios.php';
 include './admin/classes/DailyReport.php';
 
 //Permisos
-$view = SessionData::getPermission(1);
-$create = SessionData::getPermission(2);
-$edit = SessionData::getPermission(3);
-$delete = SessionData::getPermission(4);
-$enable = SessionData::getPermission(5);
-$permits = SessionData::getPermission(6);
+$view = SessionData::getPermission(22);
+$create = SessionData::getPermission(23);
+$edit = SessionData::getPermission(24);
+$delete = SessionData::getPermission(25);
+$enable = SessionData::getPermission(26);
 //Validación
 if (!$view) {
   require 'permiso_denegado.php';

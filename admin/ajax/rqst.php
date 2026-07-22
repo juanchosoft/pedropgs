@@ -753,9 +753,19 @@ switch ($op) {
         echo json_encode(Report::getAll($rqst));
         break;
 
+    case 'report_last_unfinished':
+        include '../classes/Report.php';
+        echo json_encode(Report::getLastUnfinished($rqst));
+        break;
+
     case 'updateFields':
         include '../classes/Report.php';
         echo json_encode(Report::updateFields($rqst));
+        break;
+
+    case 'report_finalize':
+        include '../classes/Report.php';
+        echo json_encode(Report::finalize($rqst));
         break;
 
     case 'pms_saveentradasalida':

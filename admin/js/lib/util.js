@@ -49,30 +49,124 @@ var UTIL = {
      * @param {JSON} ladata, paramétros del request
      * @param {function} successCallBackFn, función que captura la respuesta onSuccess
      */
-    callAjaxRqst: function(data, successCallBackFn) {
-        this.cursorBusy();
+    callAjaxRqst: function(data, successCallBackFn, options) {
+        options = options || {};
+        if (!options.silent) {
+            this.cursorBusy();
+        }
         $.ajax({
             data: data,
             type: "GET",
             dataType: "json",
             url: "admin/ajax/rqst.php",
-            success: successCallBackFn,
+            success: function(resp) {
+                if (!options.silent) {
+                    UTIL.cursorNormal();
+                }
+                if (UTIL.handlePermissionResponse(resp)) {
+                    return;
+                }
+                if (typeof successCallBackFn === "function") {
+                    successCallBackFn(resp);
+                }
+            },
+            error: function(xhr) {
+                UTIL.handleAjaxTransportError(xhr);
+            },
+            complete: function() {
+                UTIL.cursorNormal();
+            }
         });
     },
     /**
      * Hace request por AJAX
      * @param {JSON} ladata, paramétros del request
      * @param {function} successCallBackFn, función que captura la respuesta onSuccess
+     * @param {Object} [options] silent: true evita cursor wait (consultas en background)
      */
-    callAjaxRqstPOST: function(data, successCallBackFn) {
-        this.cursorBusy();
+    callAjaxRqstPOST: function(data, successCallBackFn, options) {
+        options = options || {};
+        if (!options.silent) {
+            this.cursorBusy();
+        }
         $.ajax({
             data: data,
             type: "POST",
             dataType: "json",
             url: "admin/ajax/rqst.php",
-            success: successCallBackFn,
+            success: function(resp) {
+                if (!options.silent) {
+                    UTIL.cursorNormal();
+                }
+                if (UTIL.handlePermissionResponse(resp)) {
+                    return;
+                }
+                if (typeof successCallBackFn === "function") {
+                    successCallBackFn(resp);
+                }
+            },
+            error: function(xhr) {
+                UTIL.handleAjaxTransportError(xhr);
+            },
+            complete: function() {
+                UTIL.cursorNormal();
+            }
         });
+    },
+
+    isPermissionDeniedPayload: function(resp) {
+        if (!resp || !resp.output) return false;
+        if (resp.output.valid === true) return false;
+        var content = "";
+        if (resp.output.response && typeof resp.output.response === "object") {
+            content = String(resp.output.response.content || "");
+        } else if (typeof resp.output.response === "string") {
+            content = resp.output.response;
+        }
+        var lower = content.toLowerCase();
+        return lower.indexOf("permission") !== -1 || lower.indexOf("permiso") !== -1 || lower.indexOf("do not have") !== -1;
+    },
+
+    handlePermissionResponse: function(resp) {
+        if (!UTIL.isPermissionDeniedPayload(resp)) {
+            return false;
+        }
+        var msg = "You do not have permission to perform this operation.";
+        if (resp.output && resp.output.response && resp.output.response.content) {
+            msg = resp.output.response.content;
+        }
+        var now = Date.now();
+        if (UTIL._lastPermAlertAt && now - UTIL._lastPermAlertAt < 1500 && UTIL._lastPermAlertMsg === msg) {
+            return true;
+        }
+        UTIL._lastPermAlertAt = now;
+        UTIL._lastPermAlertMsg = msg;
+        if (typeof swal === "function") {
+            swal("Permission denied", msg, "error");
+        } else {
+            alert(msg);
+        }
+        return true;
+    },
+
+    handleAjaxTransportError: function(xhr) {
+        UTIL.cursorNormal();
+        var resp = null;
+        try {
+            resp = JSON.parse(xhr.responseText);
+        } catch (e) {}
+        if (xhr.status === 403 || UTIL.isPermissionDeniedPayload(resp)) {
+            UTIL.handlePermissionResponse(resp || {
+                output: {
+                    valid: false,
+                    response: { content: "You do not have permission to perform this operation." }
+                }
+            });
+            return;
+        }
+        if (typeof swal === "function") {
+            swal("Error", "Request failed. Please try again.", "error");
+        }
     },
     /**
      * Limppia un formulario
@@ -212,3 +306,42 @@ function noPuntoComa(event) {
         e.preventDefault();
     }
 }
+
+/** Aviso global ante denegaciones AJAX (403 / payload de permisos) en rqst.php */
+$(document).ajaxError(function(event, xhr, settings) {
+    if (!settings || !xhr) return;
+    var url = String(settings.url || "");
+    if (url.indexOf("admin/ajax/rqst.php") === -1) return;
+    if (xhr.status === 403) {
+        UTIL.handleAjaxTransportError(xhr);
+        return;
+    }
+    var resp = null;
+    try {
+        resp = xhr.responseJSON || JSON.parse(xhr.responseText);
+    } catch (e) {}
+    if (UTIL.isPermissionDeniedPayload(resp)) {
+        UTIL.handlePermissionResponse(resp);
+    }
+});
+
+$(document).ajaxSuccess(function(event, xhr, settings) {
+    if (!settings || !xhr) return;
+    var url = String(settings.url || "");
+    if (url.indexOf("admin/ajax/rqst.php") === -1) return;
+    // Solo para $.ajax crudos que no pasan por UTIL.callAjax*
+    if (settings.dataType !== "json" && settings.dataTypes && settings.dataTypes.indexOf("json") === -1) {
+        return;
+    }
+    var resp = xhr.responseJSON;
+    if (!resp) {
+        try {
+            resp = JSON.parse(xhr.responseText);
+        } catch (e) {
+            return;
+        }
+    }
+    if (UTIL.isPermissionDeniedPayload(resp)) {
+        UTIL.handlePermissionResponse(resp);
+    }
+});

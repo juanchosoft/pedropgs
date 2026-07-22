@@ -154,6 +154,22 @@ class SessionData
             return "";
         }
     }
+
+    /**
+     * CC del empleado vinculado (tec_usuarios.employee_id = tec_employee.cc).
+     */
+    public static function getEmployeeCc(): int
+    {
+        if (!isset($_SESSION['session_user']['employee_id'])) {
+            return 0;
+        }
+        $cc = $_SESSION['session_user']['employee_id'];
+        if ($cc === '' || $cc === null || $cc === '0' || $cc === 0) {
+            return 0;
+        }
+        return (int) $cc;
+    }
+
     public static function getUnidadUser()
     {
 

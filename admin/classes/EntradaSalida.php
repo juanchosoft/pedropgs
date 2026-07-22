@@ -1,7 +1,14 @@
 <?php
+
+require_once __DIR__ . '/DbConection.php';
+require_once __DIR__ . '/Util.php';
+require_once __DIR__ . '/SessionData.php';
+
+/**
+ * Registro de entrada/salida (reloj) vinculado al empleado de la sesión.
+ */
 class EntradaSalida
 {
-
     public function __construct()
     {
     }
@@ -9,17 +16,23 @@ class EntradaSalida
     public static function save($rqst)
     {
         date_default_timezone_set('America/Bogota');
-        $cc = isset($rqst['cc']) ? intval($rqst['cc']) : 0;
-        $fecha = date("Y-m-d H:i:s");
+
+        // CC desde sesión (tec_usuarios.employee_id = tec_employee.cc)
+        $cc = SessionData::getEmployeeCc();
+        if ($cc <= 0 && isset($rqst['cc'])) {
+            $cc = (int) $rqst['cc'];
+        }
+
+        $fecha = date('Y-m-d H:i:s');
         $coords = $rqst['coords'] ?? '';
         if (empty($coords) || $coords === '0,0') {
             $coords = self::getCoordsByIP();
         }
-        $today = date("Y-m-d");
+        $today = date('Y-m-d');
         $ip = Util::get_real_ipaddress();
 
-        if (empty($cc)) {
-            return Util::error_missing_data('Citizenship card is mandatory');
+        if ($cc <= 0) {
+            return Util::error_general('Your user is not linked to an employee. Ask an administrator to associate your account.');
         }
 
         $db = new DbConection();
@@ -28,52 +41,182 @@ class EntradaSalida
         try {
             $pdo->beginTransaction();
 
-            // 1. Verificar existencia de usuario usando Prepared Statement
-            $stmt = $pdo->prepare("SELECT nombre FROM " . $db->getTable('tec_employee') . " WHERE cc = :cc LIMIT 1");
+            $stmt = $pdo->prepare(
+                "SELECT nombre, email, cc FROM " . $db->getTable('tec_employee') . " WHERE cc = :cc LIMIT 1"
+            );
             $stmt->execute([':cc' => $cc]);
             $empleado = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$empleado) {
                 $pdo->rollBack();
-                return Util::error_general('The document ' . $cc . ' does not exist in the database.');
+                return Util::error_general('Employee record not found for your linked ID.');
             }
 
-            // 2. Verificar entrada del día
-            $stmt = $pdo->prepare("SELECT id FROM " . $db->getTable('tec_entry') . " WHERE cc = :cc AND DATE(entrada) = :today");
+            $userFullName = SessionData::getUserFullName();
+            $mailType = null;
+            $msg = '';
+
+            // Auto: entrada si no hay del día; salida si ya hay entrada y no hay salida
+            $stmt = $pdo->prepare(
+                "SELECT id FROM " . $db->getTable('tec_entry') . " WHERE cc = :cc AND DATE(entrada) = :today LIMIT 1"
+            );
             $stmt->execute([':cc' => $cc, ':today' => $today]);
             $yaIngreso = $stmt->fetch();
 
             if (!$yaIngreso) {
-                // Registrar Entrada
-                $stmt = $pdo->prepare("INSERT INTO " . $db->getTable('tec_entry') . " (cc, entrada, ip, coords) VALUES (:cc, :entrada, :ip, :coords)");
-                $stmt->execute([':cc' => $cc, ':entrada' => $fecha, ':ip' => $ip, ':coords' => $coords]);
+                $stmt = $pdo->prepare(
+                    "INSERT INTO " . $db->getTable('tec_entry') . " (cc, entrada, ip, coords)
+                     VALUES (:cc, :entrada, :ip, :coords)"
+                );
+                $stmt->execute([
+                    ':cc' => $cc,
+                    ':entrada' => $fecha,
+                    ':ip' => $ip,
+                    ':coords' => $coords,
+                ]);
                 $msg = 'Welcome to the company ' . $empleado['nombre'];
+                $mailType = 'entrada';
             } else {
-                // 3. Verificar si ya registró salida
-                $stmt = $pdo->prepare("SELECT id FROM " . $db->getTable('tec_exit') . " WHERE cc = :cc AND DATE(salida) = :today");
+                $stmt = $pdo->prepare(
+                    "SELECT id FROM " . $db->getTable('tec_exit') . " WHERE cc = :cc AND DATE(salida) = :today LIMIT 1"
+                );
                 $stmt->execute([':cc' => $cc, ':today' => $today]);
                 $yaSalio = $stmt->fetch();
 
                 if (!$yaSalio) {
-                    // Registrar Salida
-                    $stmt = $pdo->prepare("INSERT INTO " . $db->getTable('tec_exit') . " (cc, salida, ip, coords) VALUES (:cc, :salida, :ip, :coords)");
-                    $stmt->execute([':cc' => $cc, ':salida' => $fecha, ':ip' => $ip, ':coords' => $coords]);
+                    $stmt = $pdo->prepare(
+                        "INSERT INTO " . $db->getTable('tec_exit') . " (cc, salida, ip, coords)
+                         VALUES (:cc, :salida, :ip, :coords)"
+                    );
+                    $stmt->execute([
+                        ':cc' => $cc,
+                        ':salida' => $fecha,
+                        ':ip' => $ip,
+                        ':coords' => $coords,
+                    ]);
                     $msg = 'See you tomorrow, ' . $empleado['nombre'];
+                    $mailType = 'salida';
                 } else {
                     $msg = 'Happy day ' . $empleado['nombre'];
                 }
             }
 
             $pdo->commit();
-            $arrjson = array('output' => array('valid' => true, 'response' => $msg));
 
+            if ($mailType !== null) {
+                $mailResult = self::sendAttendanceEmail([
+                    'type' => $mailType,
+                    'employee_name' => $empleado['nombre'],
+                    'employee_email' => isset($empleado['email']) ? trim((string) $empleado['email']) : '',
+                    'user_name' => $userFullName,
+                    'user_email' => '',
+                    'cc' => $cc,
+                    'datetime' => $fecha,
+                    'ip' => $ip,
+                ]);
+
+                if (!$mailResult['sent']) {
+                    $msg .= ' (Email could not be sent' . ($mailResult['error'] !== '' ? ': ' . $mailResult['error'] : '') . ')';
+                }
+            }
+
+            return ['output' => ['valid' => true, 'response' => $msg]];
         } catch (Exception $e) {
-            $pdo->rollBack();
-            $arrjson = Util::error_general('System error processing record: ' . $e->getMessage());
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return Util::error_general('System error processing record: ' . $e->getMessage());
+        } finally {
+            $db->closeConect();
+        }
+    }
+
+    /**
+     * @param array{type:string,employee_name:string,employee_email:string,user_name:string,user_email:string,cc:int|string,datetime:string,ip:string} $data
+     * @return array{sent:bool,error:string}
+     */
+    private static function sendAttendanceEmail(array $data): array
+    {
+        $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
+        if (!is_file($autoload)) {
+            return ['sent' => false, 'error' => 'Mail library missing'];
+        }
+        require_once $autoload;
+        require_once dirname(__DIR__) . '/config/constants.php';
+
+        $adminEmail = defined('ATTENDANCE_ADMIN_EMAIL') ? trim((string) ATTENDANCE_ADMIN_EMAIL) : '';
+        if ($adminEmail === '' || !Util::validate_email($adminEmail)) {
+            return ['sent' => false, 'error' => 'Admin notification email is not configured'];
         }
 
-        $db->closeConect();
-        return $arrjson;
+        $isIn = ($data['type'] === 'entrada');
+        $eventLabel = $isIn ? 'Clock In' : 'Clock Out';
+        $eventLabelEs = $isIn ? 'Entrada' : 'Salida';
+        $accent = $isIn ? '#16a34a' : '#E10600';
+        $name = htmlspecialchars($data['employee_name'] !== '' ? $data['employee_name'] : $data['user_name'], ENT_QUOTES, 'UTF-8');
+        $datetime = htmlspecialchars($data['datetime'], ENT_QUOTES, 'UTF-8');
+        $ip = htmlspecialchars((string) $data['ip'], ENT_QUOTES, 'UTF-8');
+        $cc = htmlspecialchars((string) $data['cc'], ENT_QUOTES, 'UTF-8');
+        $userName = htmlspecialchars((string) $data['user_name'], ENT_QUOTES, 'UTF-8');
+
+        $html = self::renderEmailTemplate('attendance.html', [
+            'event_label' => $eventLabel,
+            'event_label_es' => $eventLabelEs,
+            'accent' => $accent,
+            'name' => $name,
+            'datetime' => $datetime,
+            'user_name' => $userName,
+            'cc' => $cc,
+            'ip' => $ip,
+        ]);
+        if ($html === null) {
+            return ['sent' => false, 'error' => 'Email template not found'];
+        }
+
+        try {
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = 'smtp.hostinger.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'envios@spidersoftware.co';
+            $mail->Password = 'Martin3933++$$@@';
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
+            $mail->CharSet = 'UTF-8';
+            $mail->setFrom('envios@spidersoftware.co', 'PGS Centrum Time Record');
+            $mail->addAddress($adminEmail);
+
+            $mail->isHTML(true);
+            $mail->Subject = $eventLabel . ' — ' . strip_tags($name) . ' — ' . $data['datetime'];
+            $mail->Body = $html;
+            $mail->AltBody = $eventLabel . ' for ' . strip_tags($name) . ' at ' . $data['datetime'];
+            $mail->send();
+
+            return ['sent' => true, 'error' => ''];
+        } catch (\Throwable $e) {
+            return ['sent' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Carga plantilla HTML desde admin/templates/email/ y reemplaza {{placeholders}}.
+     *
+     * @param array<string, string> $vars
+     */
+    private static function renderEmailTemplate(string $fileName, array $vars): ?string
+    {
+        $path = dirname(__DIR__) . '/templates/email/' . basename($fileName);
+        if (!is_file($path)) {
+            return null;
+        }
+        $html = file_get_contents($path);
+        if ($html === false) {
+            return null;
+        }
+        foreach ($vars as $key => $value) {
+            $html = str_replace('{{' . $key . '}}', (string) $value, $html);
+        }
+        return $html;
     }
 
     private static function getCoordsByIP()

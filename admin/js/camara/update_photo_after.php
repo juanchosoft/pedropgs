@@ -43,7 +43,10 @@ if (file_put_contents($route_photo, $foto) && $id > 0) {
     $result = $pdo->query($q);
     if ($result) {
         $table = $db->getTable('tbl_fotos');
-        $arrfieldscomma = array('foto_despues' => $name_photo);
+        $arrfieldscomma = array(
+            'foto_despues' => $name_photo,
+            'estado' => 'pendiente',
+        );
         $arrfieldsnocomma = array('dtcreate' => Util::date_now_server());
         $q = Util::make_query_update($table, "id = '$id'", $arrfieldscomma, $arrfieldsnocomma);
         $result = $pdo->query($q);
