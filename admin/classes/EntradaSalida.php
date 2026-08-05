@@ -13,6 +13,72 @@ class EntradaSalida
     {
     }
 
+    /**
+     * Estado del día para el empleado de la sesión.
+     * @return array{status:string,label:string,has_employee:bool}
+     *   status: checkin | checkout | done | no_employee
+     */
+    public static function getTodayStatus()
+    {
+        date_default_timezone_set('America/Bogota');
+        $cc = SessionData::getEmployeeCc();
+        if ($cc <= 0) {
+            return [
+                'status' => 'no_employee',
+                'label' => 'Check-in',
+                'has_employee' => false,
+            ];
+        }
+
+        $db = new DbConection();
+        $pdo = $db->openConect();
+        $today = date('Y-m-d');
+
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT id FROM " . $db->getTable('tec_entry') . " WHERE cc = :cc AND DATE(entrada) = :today LIMIT 1"
+            );
+            $stmt->execute([':cc' => $cc, ':today' => $today]);
+            $yaIngreso = $stmt->fetch();
+
+            if (!$yaIngreso) {
+                return [
+                    'status' => 'checkin',
+                    'label' => 'Check-in',
+                    'has_employee' => true,
+                ];
+            }
+
+            $stmt = $pdo->prepare(
+                "SELECT id FROM " . $db->getTable('tec_exit') . " WHERE cc = :cc AND DATE(salida) = :today LIMIT 1"
+            );
+            $stmt->execute([':cc' => $cc, ':today' => $today]);
+            $yaSalio = $stmt->fetch();
+
+            if (!$yaSalio) {
+                return [
+                    'status' => 'checkout',
+                    'label' => 'Check-out',
+                    'has_employee' => true,
+                ];
+            }
+
+            return [
+                'status' => 'done',
+                'label' => 'Completed',
+                'has_employee' => true,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => 'checkin',
+                'label' => 'Check-in',
+                'has_employee' => true,
+            ];
+        } finally {
+            $db->closeConect();
+        }
+    }
+
     public static function save($rqst)
     {
         date_default_timezone_set('America/Bogota');
@@ -55,6 +121,9 @@ class EntradaSalida
             $userFullName = SessionData::getUserFullName();
             $mailType = null;
             $msg = '';
+            $action = '';
+            $nextStatus = 'done';
+            $nextLabel = 'Completed';
 
             // Auto: entrada si no hay del día; salida si ya hay entrada y no hay salida
             $stmt = $pdo->prepare(
@@ -74,8 +143,11 @@ class EntradaSalida
                     ':ip' => $ip,
                     ':coords' => $coords,
                 ]);
-                $msg = 'Welcome to the company ' . $empleado['nombre'];
+                $msg = 'Check-in registered. Welcome, ' . $empleado['nombre'];
                 $mailType = 'entrada';
+                $action = 'checkin';
+                $nextStatus = 'checkout';
+                $nextLabel = 'Check-out';
             } else {
                 $stmt = $pdo->prepare(
                     "SELECT id FROM " . $db->getTable('tec_exit') . " WHERE cc = :cc AND DATE(salida) = :today LIMIT 1"
@@ -94,10 +166,16 @@ class EntradaSalida
                         ':ip' => $ip,
                         ':coords' => $coords,
                     ]);
-                    $msg = 'See you tomorrow, ' . $empleado['nombre'];
+                    $msg = 'Check-out registered. See you tomorrow, ' . $empleado['nombre'];
                     $mailType = 'salida';
+                    $action = 'checkout';
+                    $nextStatus = 'done';
+                    $nextLabel = 'Completed';
                 } else {
-                    $msg = 'Happy day ' . $empleado['nombre'];
+                    $msg = 'You already completed Check-in and Check-out for today, ' . $empleado['nombre'];
+                    $action = 'done';
+                    $nextStatus = 'done';
+                    $nextLabel = 'Completed';
                 }
             }
 
@@ -120,7 +198,15 @@ class EntradaSalida
                 }
             }
 
-            return ['output' => ['valid' => true, 'response' => $msg]];
+            return [
+                'output' => [
+                    'valid' => true,
+                    'response' => $msg,
+                    'action' => $action,
+                    'next_status' => $nextStatus,
+                    'next_label' => $nextLabel,
+                ],
+            ];
         } catch (Exception $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();

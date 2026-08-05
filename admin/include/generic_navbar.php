@@ -994,7 +994,7 @@
             <li><a href="./empleados.php">View Employees</a></li>
             <?php endif; ?>
             <?php if (SessionData::getPermission(33)): ?>
-            <li><a href="./reloj.php">Record time</a></li>
+            <li><a href="./reloj.php">Check-in - Check-out</a></li>
             <?php endif; ?>
             <?php if (SessionData::getPermission(45)): ?>
             <li><a href="./informe_salidas.php">Entry - Exit</a></li>

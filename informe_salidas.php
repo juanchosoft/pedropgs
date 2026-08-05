@@ -6,6 +6,17 @@ $arr = InformeTiempo::getAll(null);
 $isvalid  = $arr['output']['valid'];
 $entradas = $arr['output']['response'];
 
+$employeeFilterOptions = [];
+if ($isvalid && is_array($entradas)) {
+  foreach ($entradas as $row) {
+    $empName = trim((string)($row['nombre'] ?? ''));
+    if ($empName !== '') {
+      $employeeFilterOptions[$empName] = $empName;
+    }
+  }
+  ksort($employeeFilterOptions, SORT_NATURAL | SORT_FLAG_CASE);
+}
+
 $modulo = 'Record time Employes';
 
 // Permissions
@@ -280,8 +291,19 @@ if (!$view) { require 'permiso_denegado.php'; exit; }
               </div>
 
               <div class="card card-premium">
-                <div class="card-header">
+                <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                   <h4 class="card-title mb-0">Record Time Employes</h4>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <label for="filter_employee" style="margin:0;font-weight:900;font-size:12px;color:#6b7280;white-space:nowrap;">Filter by employee</label>
+                    <select id="filter_employee" class="form-control" style="min-width:200px;max-width:280px;">
+                      <option value="">All employees</option>
+                      <?php foreach ($employeeFilterOptions as $empOpt): ?>
+                        <option value="<?php echo htmlspecialchars($empOpt, ENT_QUOTES, 'UTF-8'); ?>">
+                          <?php echo htmlspecialchars($empOpt, ENT_QUOTES, 'UTF-8'); ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
                 </div>
 
                 <div class="card-body">
@@ -398,6 +420,22 @@ if (!$view) { require 'permiso_denegado.php'; exit; }
 
   <?php include './admin/include/gerenic_script.php'; ?>
   <?php include './admin/include/generic_dataTables.php'; ?>
+
+  <script>
+    $(document).ready(function () {
+      var $table = $('#dynamictable');
+      if (!$table.length || !$.fn.DataTable || !$.fn.DataTable.isDataTable($table)) {
+        return;
+      }
+      var table = $table.DataTable();
+      // Name column index: CC, Name, Time Entry, ...
+      var NAME_COL = 1;
+      $('#filter_employee').on('change', function () {
+        var val = $(this).val();
+        table.column(NAME_COL).search(val ? $.fn.dataTable.util.escapeRegex(val) : '', true, false).draw();
+      });
+    });
+  </script>
 
   <script>
     let map;

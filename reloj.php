@@ -15,9 +15,15 @@ $enable = SessionData::getPermission(37);
 
 if (!$view) { require 'permiso_denegado.php'; }
 
-$modulo = 'Record Time';
+$modulo = 'Check-in - Check-out';
 $employeeCc = SessionData::getEmployeeCc();
 $hasEmployee = $employeeCc > 0;
+
+include './admin/classes/EntradaSalida.php';
+$clockStatus = EntradaSalida::getTodayStatus();
+$btnLabel = $clockStatus['label'];
+$btnStatus = $clockStatus['status'];
+$btnDisabled = (!$hasEmployee || $btnStatus === 'done');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -340,7 +346,7 @@ $hasEmployee = $employeeCc > 0;
           <div class="page-titles">
             <ol class="breadcrumb">
               <li class="breadcrumb-item"><a href="javascript:void(0)">Home</a></li>
-              <li class="breadcrumb-item active"><a href="javascript:void(0)">Record Time</a></li>
+              <li class="breadcrumb-item active"><a href="javascript:void(0)">Check-in - Check-out</a></li>
             </ol>
           </div>
 
@@ -357,8 +363,8 @@ $hasEmployee = $employeeCc > 0;
                       <div class="rt-top">
                         <div>
                           <span class="rt-pill"><span class="dot"></span> Attendance</span>
-                          <h4 class="rt-title">Record Time</h4>
-                          <div class="rt-sub">Enter your ID to register entry/exit. The system records time automatically.</div>
+                          <h4 class="rt-title">Check-in - Check-out</h4>
+                          <div class="rt-sub">Register your Check-in at the start of your shift and Check-out when you leave.</div>
                         </div>
                       </div>
 
@@ -400,8 +406,20 @@ $hasEmployee = $employeeCc > 0;
                                 </div>
 
                                 <div class="registerid rt-register">
-                                  <h2><span class="rt-badge"><i class="fa fa-clock-o"></i></span> SEND TIME</h2>
-                                  <p class="hint">Send time to init/start your turn.</p>
+                                  <h2><span class="rt-badge"><i class="fa fa-clock-o"></i></span> <span id="rt-action-title"><?php echo htmlspecialchars($btnLabel); ?></span></h2>
+                                  <p class="hint" id="rt-action-hint">
+                                    <?php
+                                      if ($btnStatus === 'checkin') {
+                                        echo 'Press Check-in to start your shift.';
+                                      } elseif ($btnStatus === 'checkout') {
+                                        echo 'Press Check-out to end your shift.';
+                                      } elseif ($btnStatus === 'done') {
+                                        echo 'You already completed Check-in and Check-out for today.';
+                                      } else {
+                                        echo 'Link your user to an employee to use the time clock.';
+                                      }
+                                    ?>
+                                  </p>
 
                                   <?php if (!$hasEmployee): ?>
                                     <div class="alert alert-warning" style="border-radius:14px;font-weight:800;">
@@ -410,8 +428,8 @@ $hasEmployee = $employeeCc > 0;
                                   <?php endif; ?>
 
                                   <div style="display:flex;gap:10px;">
-                                    <button type="button" id="btn-send" class="btn btn-primary btn-send-id" style="width:100%;" <?php echo $hasEmployee ? '' : 'disabled'; ?>>
-                                      Send
+                                    <button type="button" id="btn-send" class="btn btn-primary btn-send-id" data-status="<?php echo htmlspecialchars($btnStatus); ?>" style="width:100%;" <?php echo $btnDisabled ? 'disabled' : ''; ?>>
+                                      <?php echo htmlspecialchars($btnLabel); ?>
                                     </button>
                                   </div>
 
@@ -489,6 +507,7 @@ $hasEmployee = $employeeCc > 0;
 
   <script>
     window.PGS_HAS_EMPLOYEE = <?php echo $hasEmployee ? 'true' : 'false'; ?>;
+    window.PGS_CLOCK_STATUS = <?php echo json_encode($btnStatus); ?>;
     $(function () {
       $("#coords").val("");
       $("#btn-send").on("click", function () {

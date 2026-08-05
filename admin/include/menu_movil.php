@@ -525,7 +525,7 @@
           <li><a href="./empleados.php">View Employees <span class="chev">›</span></a></li>
           <?php endif; ?>
           <?php if (SessionData::getPermission(33)): ?>
-          <li><a href="./reloj.php">Record time <span class="chev">›</span></a></li>
+          <li><a href="./reloj.php">Check-in - Check-out <span class="chev">›</span></a></li>
           <?php endif; ?>
           <?php if (SessionData::getPermission(45)): ?>
           <li><a href="./informe_salidas.php">Entry - Exit <span class="chev">›</span></a></li>
