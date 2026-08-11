@@ -1,62 +1,89 @@
 <?php
 /**
- * Botón flotante + modales propios para editar el último reporte no finalizado.
- * IDs únicos (pgs*) para no chocar con myModal de otras pantallas.
+ * Barra de notificación + modales para editar el último reporte no finalizado.
+ * Se incluye solo en main.php (dashboard). IDs pgs* para no chocar con otras pantallas.
  */
 if (!class_exists('SessionData') || !SessionData::getPermission(9)) {
     return;
 }
 ?>
 <style>
-  .pgs-fab-wrap{
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    z-index: 1050;
+  .pgs-report-bar{
     display: none;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(225,6,0,.22);
+    background:
+      linear-gradient(135deg, rgba(225,6,0,.08), rgba(255,255,255,.96)),
+      #fff;
+    box-shadow: 0 10px 28px rgba(2,6,23,.08);
   }
-  .pgs-fab-wrap.is-visible{ display: flex; }
-  .pgs-fab-panel{
-    width: min(320px, calc(100vw - 36px));
-    background: #fff;
-    border: 1px solid #e7eaf1;
-    border-radius: 18px;
-    box-shadow: 0 18px 50px rgba(2,6,23,.18);
-    padding: 14px;
+  .pgs-report-bar.is-visible{ display: flex; }
+  .pgs-report-bar-left{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    min-width: 0;
+    flex: 1 1 240px;
   }
-  .pgs-fab-panel .t{ font-weight: 1000; font-size: 14px; margin: 0 0 4px; color:#0B0F19; }
-  .pgs-fab-panel .s{ font-size: 12px; color:#64748b; font-weight: 700; margin: 0 0 12px; }
-  .pgs-fab-actions{ display:flex; gap:8px; flex-wrap:wrap; }
-  .pgs-fab-actions .btn{ flex:1; border-radius: 12px; font-weight: 900; font-size: 12px; }
-  .pgs-fab-main{
-    width: 58px; height: 58px; border-radius: 999px; border: none;
+  .pgs-report-bar-icon{
+    width: 38px; height: 38px; border-radius: 12px; flex: 0 0 auto;
+    display:inline-flex; align-items:center; justify-content:center;
     background: linear-gradient(135deg, #E10600, #B30500);
-    color: #fff; box-shadow: 0 14px 30px rgba(225,6,0,.35);
-    font-size: 22px; cursor: pointer;
+    color:#fff; font-size: 16px;
+    box-shadow: 0 10px 20px rgba(225,6,0,.25);
   }
-  .pgs-fab-close{
-    border: none; background: transparent; color: #64748b;
-    font-weight: 900; float: right; line-height: 1; padding: 0;
+  .pgs-report-bar-copy{ min-width:0; }
+  .pgs-report-bar-copy .t{
+    margin:0;
+    font-weight: 1000;
+    font-size: 14px;
+    color:#0B0F19;
+    line-height:1.2;
+  }
+  .pgs-report-bar-copy .s{
+    margin: 4px 0 0;
+    font-size: 12px;
+    color:#64748b;
+    font-weight: 700;
+    word-break: break-word;
+  }
+  .pgs-report-bar-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .pgs-report-bar-actions .btn{
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  @media (max-width: 576px){
+    .pgs-report-bar-actions{ width:100%; }
+    .pgs-report-bar-actions .btn{ flex: 1 1 auto; }
   }
 </style>
 
-<div class="pgs-fab-wrap" id="pgsReportFab" aria-live="polite">
-  <div class="pgs-fab-panel" id="pgsReportFabPanel" style="display:none;">
-    <button type="button" class="pgs-fab-close" id="pgsReportFabHide" title="Hide">&times;</button>
-    <p class="t">Last unfinished report</p>
-    <p class="s" id="pgsReportFabLabel">Item #—</p>
-    <div class="pgs-fab-actions">
-      <button type="button" class="btn btn-outline-primary" id="pgsReportFabEditDesc">Edit description</button>
-      <button type="button" class="btn btn-outline-info" id="pgsReportFabEditPhoto">Edit photo</button>
-      <button type="button" class="btn btn-outline-success" id="pgsReportFabFinalize">Finalize</button>
+<div class="pgs-report-bar" id="pgsReportBar" aria-live="polite" style="display:none;">
+  <div class="pgs-report-bar-left">
+    <div class="pgs-report-bar-icon" aria-hidden="true"><i class="fa fa-pencil"></i></div>
+    <div class="pgs-report-bar-copy">
+      <p class="t">Unfinished report pending</p>
+      <p class="s" id="pgsReportBarLabel">Item #—</p>
     </div>
   </div>
-  <button type="button" class="pgs-fab-main" id="pgsReportFabToggle" title="Edit last report">
-    <i class="fa fa-pencil"></i>
-  </button>
+  <div class="pgs-report-bar-actions">
+    <button type="button" class="btn btn-outline-primary btn-sm" id="pgsReportFabEditDesc">Edit description</button>
+    <button type="button" class="btn btn-outline-info btn-sm" id="pgsReportFabEditPhoto">Edit photo</button>
+    <button type="button" class="btn btn-outline-success btn-sm" id="pgsReportFabFinalize">Finalize</button>
+  </div>
 </div>
 
 <div class="modal fade" id="pgsReportEditModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -130,4 +157,3 @@ if (!class_exists('SessionData') || !SessionData::getPermission(9)) {
 <script>
 window.PGS_CAN_EDIT_REPORT = true;
 </script>
-<script src="./admin/js/report_quick_edit.js"></script>

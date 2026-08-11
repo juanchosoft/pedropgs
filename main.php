@@ -1137,6 +1137,8 @@ $arrUnidadesData = $arrUnidades;
           </div>
         </div>
 
+        <?php include './admin/include/report_quick_edit_widget.php'; ?>
+
         <!-- ✅ Premium Welcome Banner -->
         <div class="alert alert-light alert-dismissible fade show pgs-alert" role="alert">
           <div class="pgs-alert-line">
@@ -1289,6 +1291,12 @@ $arrUnidadesData = $arrUnidades;
 
     <?php include './admin/include/gerenic_footer.php'; ?>
     <?php include './admin/include/gerenic_script.php'; ?>
+    <?php if (class_exists('SessionData') && SessionData::getPermission(9)): ?>
+    <script>
+      window.PGS_CAN_EDIT_REPORT = true;
+    </script>
+    <script src="./admin/js/report_quick_edit.js"></script>
+    <?php endif; ?>
   </div>
 </body>
 

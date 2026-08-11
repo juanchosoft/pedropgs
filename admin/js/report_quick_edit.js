@@ -1,7 +1,13 @@
 /**
- * FAB: editar último reporte no finalizado del usuario en sesión.
+ * Dashboard bar: editar último reporte no finalizado del usuario en sesión.
  */
-(function ($) {
+(function (factory) {
+    "use strict";
+    if (typeof jQuery === "undefined") {
+        return;
+    }
+    factory(jQuery);
+})(function ($) {
     "use strict";
 
     var currentReport = null;
@@ -76,10 +82,14 @@
             });
     }
 
-    function showFab(report) {
+    function showBar(report) {
         currentReport = report;
+        var $bar = $("#pgsReportBar");
+        if (!$bar.length) {
+            return;
+        }
         if (!report || !report.id) {
-            $("#pgsReportFab").removeClass("is-visible");
+            hideBarCompletely();
             return;
         }
         var status = report.estado || "creado";
@@ -91,31 +101,27 @@
                 : status === "finalizado"
                 ? "Finalized"
                 : status;
-        $("#pgsReportFabLabel").text(
+        $("#pgsReportBarLabel").text(
             "Item #" +
                 report.id +
                 " · " +
                 statusLabel +
                 (report.actividades ? " — " + report.actividades : "")
         );
-        $("#pgsReportFab").addClass("is-visible");
-        // Panel cerrado por defecto; se abre solo con clic en el FAB
-        $("#pgsReportFabPanel").hide();
+        $bar.addClass("is-visible").css("display", "flex");
     }
 
-    function hideFabPanel() {
-        $("#pgsReportFabPanel").hide();
-    }
-
-    function hideFabCompletely() {
+    function hideBarCompletely() {
         currentReport = null;
-        $("#pgsReportFab").removeClass("is-visible");
-        hideFabPanel();
+        $("#pgsReportBar").removeClass("is-visible").hide();
     }
 
     function loadLastUnfinished(opts) {
         opts = opts || {};
         if (!window.PGS_CAN_EDIT_REPORT || typeof UTIL === "undefined") {
+            return;
+        }
+        if (!$("#pgsReportBar").length) {
             return;
         }
         UTIL.callAjaxRqstPOST({ op: "report_last_unfinished" }, function (data) {
@@ -124,12 +130,12 @@
             }
             var report = data.output.response;
             if (!report) {
-                hideFabCompletely();
+                hideBarCompletely();
                 return;
             }
-            showFab(report);
+            showBar(report);
             if (opts.notifyCreated) {
-                notify("Report created", "You can finish it with the floating Edit button.", "success");
+                notify("Report created", "Finish it from the notification bar on the Dashboard.", "success");
             }
         }, { silent: true });
     }
@@ -172,7 +178,7 @@
                         currentReport.actividades = actividades;
                         currentReport.observaciones = observaciones;
                         currentReport.estado = "pendiente";
-                        showFab(currentReport);
+                        showBar(currentReport);
                     }
                     notify("Saved", "Information saved correctly", "success");
                 } else if (data && data.output && data.output.response) {
@@ -257,7 +263,7 @@
                 { op: "report_finalize", id: currentReport.id },
                 function (data) {
                     if (data && data.output && data.output.valid) {
-                        hideFabCompletely();
+                        hideBarCompletely();
                         notify("Report finalized", "", "success");
                     } else if (data && data.output && data.output.response) {
                         var msg =
@@ -274,24 +280,26 @@
     window.PGS_REPORT_QUICK = {
         refresh: loadLastUnfinished,
         showCreated: function (reportId) {
-            if (reportId) {
-                showFab({ id: reportId, actividades: "", observaciones: "", estado: "creado" });
+            if ($("#pgsReportBar").length) {
+                if (reportId) {
+                    showBar({ id: reportId, actividades: "", observaciones: "", estado: "creado" });
+                }
+                loadLastUnfinished({ notifyCreated: true });
+            } else {
+                notify(
+                    "Report created",
+                    "Go to the Dashboard to edit description, photo, or finalize your unfinished report.",
+                    "success"
+                );
             }
-            loadLastUnfinished();
         },
     };
 
     $(function () {
-        if (!window.PGS_CAN_EDIT_REPORT) {
+        if (!window.PGS_CAN_EDIT_REPORT || !$("#pgsReportBar").length) {
             return;
         }
 
-        $("#pgsReportFabToggle").on("click", function () {
-            $("#pgsReportFabPanel").toggle();
-        });
-        $("#pgsReportFabHide").on("click", function () {
-            hideFabPanel();
-        });
         $("#pgsReportFabEditDesc").on("click", openEditDescription);
         $("#pgsReportFabEditPhoto").on("click", openEditPhoto);
         $("#pgsReportFabFinalize").on("click", finalizeReport);
@@ -315,4 +323,4 @@
         }
         loadLastUnfinished();
     });
-})(jQuery);
+});

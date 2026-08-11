@@ -6,6 +6,7 @@ require_once __DIR__ . '/SessionData.php';
 
 /**
  * Registro de entrada/salida (reloj) vinculado al empleado de la sesión.
+ * Permite múltiples check-in / check-out el mismo día según el último evento.
  */
 class EntradaSalida
 {
@@ -14,9 +15,9 @@ class EntradaSalida
     }
 
     /**
-     * Estado del día para el empleado de la sesión.
+     * Estado actual según el último registro del día.
      * @return array{status:string,label:string,has_employee:bool}
-     *   status: checkin | checkout | done | no_employee
+     *   status: checkin | checkout | no_employee
      */
     public static function getTodayStatus()
     {
@@ -35,37 +36,10 @@ class EntradaSalida
         $today = date('Y-m-d');
 
         try {
-            $stmt = $pdo->prepare(
-                "SELECT id FROM " . $db->getTable('tec_entry') . " WHERE cc = :cc AND DATE(entrada) = :today LIMIT 1"
-            );
-            $stmt->execute([':cc' => $cc, ':today' => $today]);
-            $yaIngreso = $stmt->fetch();
-
-            if (!$yaIngreso) {
-                return [
-                    'status' => 'checkin',
-                    'label' => 'Check-in',
-                    'has_employee' => true,
-                ];
-            }
-
-            $stmt = $pdo->prepare(
-                "SELECT id FROM " . $db->getTable('tec_exit') . " WHERE cc = :cc AND DATE(salida) = :today LIMIT 1"
-            );
-            $stmt->execute([':cc' => $cc, ':today' => $today]);
-            $yaSalio = $stmt->fetch();
-
-            if (!$yaSalio) {
-                return [
-                    'status' => 'checkout',
-                    'label' => 'Check-out',
-                    'has_employee' => true,
-                ];
-            }
-
+            $next = self::resolveNextAction($pdo, $db, $cc, $today);
             return [
-                'status' => 'done',
-                'label' => 'Completed',
+                'status' => $next,
+                'label' => ($next === 'checkout') ? 'Check-out' : 'Check-in',
                 'has_employee' => true,
             ];
         } catch (Exception $e) {
@@ -77,6 +51,46 @@ class EntradaSalida
         } finally {
             $db->closeConect();
         }
+    }
+
+    /**
+     * Determina la siguiente acción según el último evento del día.
+     * - Sin registros o última salida → checkin
+     * - Última entrada → checkout
+     *
+     * @return string checkin|checkout
+     */
+    private static function resolveNextAction(PDO $pdo, DbConection $db, $cc, $today)
+    {
+        $entryTable = $db->getTable('tec_entry');
+        $exitTable = $db->getTable('tec_exit');
+
+        $sql = "SELECT tipo, momento FROM (
+                    SELECT 'entrada' AS tipo, entrada AS momento, id
+                    FROM {$entryTable}
+                    WHERE cc = :cc1 AND DATE(entrada) = :today1
+                    UNION ALL
+                    SELECT 'salida' AS tipo, salida AS momento, id
+                    FROM {$exitTable}
+                    WHERE cc = :cc2 AND DATE(salida) = :today2
+                ) AS eventos
+                ORDER BY momento DESC, id DESC
+                LIMIT 1";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':cc1' => $cc,
+            ':today1' => $today,
+            ':cc2' => $cc,
+            ':today2' => $today,
+        ]);
+        $last = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$last) {
+            return 'checkin';
+        }
+
+        return ($last['tipo'] === 'entrada') ? 'checkout' : 'checkin';
     }
 
     public static function save($rqst)
@@ -119,20 +133,14 @@ class EntradaSalida
             }
 
             $userFullName = SessionData::getUserFullName();
+            $nextAction = self::resolveNextAction($pdo, $db, $cc, $today);
             $mailType = null;
             $msg = '';
             $action = '';
-            $nextStatus = 'done';
-            $nextLabel = 'Completed';
+            $nextStatus = 'checkin';
+            $nextLabel = 'Check-in';
 
-            // Auto: entrada si no hay del día; salida si ya hay entrada y no hay salida
-            $stmt = $pdo->prepare(
-                "SELECT id FROM " . $db->getTable('tec_entry') . " WHERE cc = :cc AND DATE(entrada) = :today LIMIT 1"
-            );
-            $stmt->execute([':cc' => $cc, ':today' => $today]);
-            $yaIngreso = $stmt->fetch();
-
-            if (!$yaIngreso) {
+            if ($nextAction === 'checkin') {
                 $stmt = $pdo->prepare(
                     "INSERT INTO " . $db->getTable('tec_entry') . " (cc, entrada, ip, coords)
                      VALUES (:cc, :entrada, :ip, :coords)"
@@ -149,34 +157,22 @@ class EntradaSalida
                 $nextStatus = 'checkout';
                 $nextLabel = 'Check-out';
             } else {
+                // Check-out: exige que el último evento sea una entrada
                 $stmt = $pdo->prepare(
-                    "SELECT id FROM " . $db->getTable('tec_exit') . " WHERE cc = :cc AND DATE(salida) = :today LIMIT 1"
+                    "INSERT INTO " . $db->getTable('tec_exit') . " (cc, salida, ip, coords)
+                     VALUES (:cc, :salida, :ip, :coords)"
                 );
-                $stmt->execute([':cc' => $cc, ':today' => $today]);
-                $yaSalio = $stmt->fetch();
-
-                if (!$yaSalio) {
-                    $stmt = $pdo->prepare(
-                        "INSERT INTO " . $db->getTable('tec_exit') . " (cc, salida, ip, coords)
-                         VALUES (:cc, :salida, :ip, :coords)"
-                    );
-                    $stmt->execute([
-                        ':cc' => $cc,
-                        ':salida' => $fecha,
-                        ':ip' => $ip,
-                        ':coords' => $coords,
-                    ]);
-                    $msg = 'Check-out registered. See you tomorrow, ' . $empleado['nombre'];
-                    $mailType = 'salida';
-                    $action = 'checkout';
-                    $nextStatus = 'done';
-                    $nextLabel = 'Completed';
-                } else {
-                    $msg = 'You already completed Check-in and Check-out for today, ' . $empleado['nombre'];
-                    $action = 'done';
-                    $nextStatus = 'done';
-                    $nextLabel = 'Completed';
-                }
+                $stmt->execute([
+                    ':cc' => $cc,
+                    ':salida' => $fecha,
+                    ':ip' => $ip,
+                    ':coords' => $coords,
+                ]);
+                $msg = 'Check-out registered. You can Check-in again if you return today, ' . $empleado['nombre'];
+                $mailType = 'salida';
+                $action = 'checkout';
+                $nextStatus = 'checkin';
+                $nextLabel = 'Check-in';
             }
 
             $pdo->commit();

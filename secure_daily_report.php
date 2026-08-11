@@ -47,14 +47,25 @@ try {
     $dataShow = $data;
 
     if (count($data) > 0) {
-        $data = $data[0];
-        $id = $data['id'] ?? '';
-        $hoa = $data['nombre'] ?? '';
-        $employee = $data['usuario'] ?? '';
-        $dtcreate = $data['dtcreate'] ?? '';
-        $email = $data['email'] ?? '';
-        $manager = $data['administrador'] ?? '';
-        $address = $data['ubicacion'] ?? '';
+        $data0 = $data[0];
+        $id = $data0['id'] ?? '';
+        $hoa = $data0['nombre'] ?? '';
+        $dtcreate = $data0['dtcreate'] ?? '';
+        $email = $data0['email'] ?? '';
+        $manager = $data0['administrador'] ?? '';
+        $address = $data0['ubicacion'] ?? '';
+
+        $employeesUnique = [];
+        foreach ($dataShow as $rowEmp) {
+            $empName = trim((string) ($rowEmp['usuario'] ?? ''));
+            if ($empName !== '') {
+                $employeesUnique[$empName] = $empName;
+            }
+        }
+        $employee = implode(', ', array_values($employeesUnique));
+        if ($employee === '') {
+            $employee = 'N/A';
+        }
     }
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
@@ -284,6 +295,8 @@ try {
                                                 <div class="page-number"></div>
                                                 <div><strong>Version:</strong> 1</div>
                                                 <div><strong>Date:</strong> <?= htmlspecialchars($dtcreate); ?></div>
+                                                <div><strong>Employees:</strong> <?= htmlspecialchars($employee); ?></div>
+                                                <div><strong>Jobs:</strong> <?= (int) count($dataShow); ?></div>
                                             </div>
                                         </div>
 
@@ -297,11 +310,13 @@ try {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
+                                                    <?php foreach ($dataShow as $summaryRow): ?>
                                                     <tr>
-                                                        <td class="left strong"><?= htmlspecialchars($dtcreate); ?></td>
+                                                        <td class="left strong"><?= htmlspecialchars($summaryRow['dtcreate'] ?? ''); ?></td>
                                                         <td class="left"><?= htmlspecialchars($hoa); ?></td>
-                                                        <td class="right"><?= htmlspecialchars($employee); ?></td>
+                                                        <td class="right"><?= htmlspecialchars(trim((string) ($summaryRow['usuario'] ?? ''))); ?></td>
                                                     </tr>
+                                                    <?php endforeach; ?>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -309,11 +324,15 @@ try {
 
 
                                         <?php foreach ($dataShow as $data) :
+                                            $itemEmployee = trim((string) ($data['usuario'] ?? ''));
                                             $img = !empty($data["foto_antes"]) && $data["foto_antes"] !== "no_image.png" ? "admin/js/camara/foto/{$data['foto_antes']}" : 'assets/img/logo-spiderP.png';
                                             $imga = !empty($data["foto_despues"]) && $data["foto_despues"] !== "no_image.png" ? "admin/js/camara/foto/{$data['foto_despues']}" : 'assets/img/logo-spiderP.png';
                                         ?>
                                             <hr>
                                             <h5 class="red-background">Job Zone Reported</h5>
+                                            <?php if ($itemEmployee !== ''): ?>
+                                            <p style="text-align:center;font-weight:bold;margin:0 0 8px;"><strong>Employee:</strong> <?= htmlspecialchars($itemEmployee); ?></p>
+                                            <?php endif; ?>
                                             <table class="table table-bordered table-sm">
                                                 <thead>
                                                     <tr>

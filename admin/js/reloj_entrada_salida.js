@@ -51,38 +51,25 @@ var RELOJENTRADASALIDA = {
         var $btn = $("#btn-send");
         var $title = $("#rt-action-title");
         var $hint = $("#rt-action-hint");
-        var text = label || (status === 'checkout' ? 'Check-out' : (status === 'done' ? 'Completed' : 'Check-in'));
+        var nextStatus = (status === 'checkout') ? 'checkout' : 'checkin';
+        var text = label || (nextStatus === 'checkout' ? 'Check-out' : 'Check-in');
 
-        window.PGS_CLOCK_STATUS = status;
-        $btn.attr("data-status", status).text(text);
+        window.PGS_CLOCK_STATUS = nextStatus;
+        $btn.attr("data-status", nextStatus).text(text).prop('disabled', !window.PGS_HAS_EMPLOYEE);
         if ($title.length) {
             $title.text(text);
         }
 
-        if (status === 'checkout') {
-            $hint.text('Press Check-out to end your shift.');
-            $btn.prop('disabled', !window.PGS_HAS_EMPLOYEE);
-        } else if (status === 'done') {
-            $hint.text('You already completed Check-in and Check-out for today.');
-            $btn.prop('disabled', true);
-        } else if (status === 'checkin') {
-            $hint.text('Press Check-in to start your shift.');
-            $btn.prop('disabled', !window.PGS_HAS_EMPLOYEE);
+        if (nextStatus === 'checkout') {
+            $hint.text('Press Check-out to end this period. You can Check-in again later today.');
+        } else {
+            $hint.text('Press Check-in to start a new period. Multiple entries/exits are allowed per day.');
         }
     },
     validate() {
         if (!window.PGS_HAS_EMPLOYEE) {
             swal("Employee required", "Your user is not linked to an employee. Ask an administrator to associate your account.", "error");
             return;
-        }
-
-        var status = window.PGS_CLOCK_STATUS || $("#btn-send").attr("data-status") || "checkin";
-        if (status === "done") {
-            swal("Already completed", "You already registered Check-in and Check-out for today.", "info");
-            return;
-        }
-        if (status === "checkout") {
-            // Check-out only allowed after Check-in (backend also enforces this)
         }
 
         var coords = $("#coords").val();

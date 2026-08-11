@@ -23,7 +23,7 @@ include './admin/classes/EntradaSalida.php';
 $clockStatus = EntradaSalida::getTodayStatus();
 $btnLabel = $clockStatus['label'];
 $btnStatus = $clockStatus['status'];
-$btnDisabled = (!$hasEmployee || $btnStatus === 'done');
+$btnDisabled = !$hasEmployee;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -364,7 +364,7 @@ $btnDisabled = (!$hasEmployee || $btnStatus === 'done');
                         <div>
                           <span class="rt-pill"><span class="dot"></span> Attendance</span>
                           <h4 class="rt-title">Check-in - Check-out</h4>
-                          <div class="rt-sub">Register your Check-in at the start of your shift and Check-out when you leave.</div>
+                          <div class="rt-sub">Register Check-in / Check-out as many times as needed. The next action depends on your last record today.</div>
                         </div>
                       </div>
 
@@ -409,12 +409,10 @@ $btnDisabled = (!$hasEmployee || $btnStatus === 'done');
                                   <h2><span class="rt-badge"><i class="fa fa-clock-o"></i></span> <span id="rt-action-title"><?php echo htmlspecialchars($btnLabel); ?></span></h2>
                                   <p class="hint" id="rt-action-hint">
                                     <?php
-                                      if ($btnStatus === 'checkin') {
-                                        echo 'Press Check-in to start your shift.';
-                                      } elseif ($btnStatus === 'checkout') {
-                                        echo 'Press Check-out to end your shift.';
-                                      } elseif ($btnStatus === 'done') {
-                                        echo 'You already completed Check-in and Check-out for today.';
+                                      if ($btnStatus === 'checkout') {
+                                        echo 'Press Check-out to end this period. You can Check-in again later today.';
+                                      } elseif ($btnStatus === 'checkin') {
+                                        echo 'Press Check-in to start a new period. Multiple entries/exits are allowed per day.';
                                       } else {
                                         echo 'Link your user to an employee to use the time clock.';
                                       }

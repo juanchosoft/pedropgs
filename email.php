@@ -4,8 +4,6 @@ require './admin/include/generic_classes.php';
 include './admin/classes/DailyReport.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
-
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -15,9 +13,9 @@ if (empty($_POST['hoa']) || $_POST['hoa'] === "seleccione" || empty($_POST['f1']
     exit;
 }
 
-$f1 = $_POST['f1'];
-$f2 = $_POST['f2'];
-$hoaId = $_POST['hoa'];
+$f1 = trim((string) $_POST['f1']);
+$f2 = trim((string) $_POST['f2']);
+$hoaId = trim((string) $_POST['hoa']);
 
 // Consultar el reporte
 $rqst = ['hoa' => $hoaId, 'f1' => $f1, 'f2' => $f2];
@@ -29,13 +27,23 @@ if (empty($arr['output']['response'])) {
 }
 
 $data = $arr['output']['response'];
-$hoaName = $data[0]['nombre'] ?? ''; // Obtener el nombre del HOA
+$hoaName = $data[0]['nombre'] ?? '';
 $manager = $data[0]['administrador'] ?? '';
-$email = $data[0]['email'] ?? '';
-$email1 = $data[0]['email1'] ?? '';
-$email2 = $data[0]['email2'] ?? '';
-$email3 = $data[0]['email3'] ?? '';
-$email4 = $data[0]['email4'] ?? '';
+$email = trim((string) ($data[0]['email'] ?? ''));
+$email1 = trim((string) ($data[0]['email1'] ?? ''));
+$email2 = trim((string) ($data[0]['email2'] ?? ''));
+$email3 = trim((string) ($data[0]['email3'] ?? ''));
+$email4 = trim((string) ($data[0]['email4'] ?? ''));
+
+$employeesUnique = [];
+foreach ($data as $rowEmp) {
+    $empName = trim((string) ($rowEmp['usuario'] ?? ''));
+    if ($empName !== '') {
+        $employeesUnique[$empName] = $empName;
+    }
+}
+$employeesList = implode(', ', array_values($employeesUnique));
+$jobsCount = count($data);
 
 // Validar que el nombre del HOA no esté vacío
 if (empty($hoaName)) {
@@ -69,79 +77,92 @@ try {
     die("Database connection error: " . $e->getMessage());
 }
 
-// Generar el enlace seguro
-$baseURL = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$baseURL .= "://{$_SERVER['HTTP_HOST']}";
-$link = $baseURL . "/ap/secure_daily_report.php?token=$token";
+// Generar el enlace seguro (misma carpeta que email.php)
+$baseURL = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$baseURL .= '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+$scriptDir = rtrim($scriptDir, '/');
+$link = $baseURL . $scriptDir . '/secure_daily_report.php?token=' . urlencode($token);
 
 // Enviar el correo
 $mail = new PHPMailer(true);
+$emails_sent = [];
 try {
     $mail->isSMTP();
-    $mail->Host = 'smtp.hostinger.com'; 
+    $mail->Host = 'smtp.hostinger.com';
     $mail->SMTPAuth = true;
-    $mail->Username = 'envios@spidersoftware.co'; 
-    $mail->Password = 'Martin3933++$$@@'; 
+    $mail->Username = 'envios@spidersoftware.co';
+    $mail->Password = 'Martin3933++$$@@';
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port = 587;
+    $mail->CharSet = 'UTF-8';
 
     $mail->setFrom('envios@spidersoftware.co', 'Job Report');
+
+    $hasRecipient = false;
     if (!empty($email) && Util::validate_email($email)) {
         $mail->addAddress($email);
+        $emails_sent[] = $email;
+        $hasRecipient = true;
     }
     for ($i = 1; $i <= 4; $i++) {
         $emailVar = 'email' . $i;
         if (!empty($$emailVar) && Util::validate_email($$emailVar)) {
             $mail->addCC($$emailVar);
             $emails_sent[] = $$emailVar;
+            $hasRecipient = true;
         }
+    }
+
+    if (!$hasRecipient) {
+        echo "<script>alert('No valid email recipients configured for this HOA.'); window.location = 'report-list-group.php';</script>";
+        exit;
     }
 
     $mail->isHTML(true);
     $mail->Subject = "Job Report for HOA $hoaName";
 
-    // Estilo para el correo
+    $employeesHtml = htmlspecialchars($employeesList !== '' ? $employeesList : 'N/A', ENT_QUOTES, 'UTF-8');
+    $hoaNameHtml = htmlspecialchars($hoaName, ENT_QUOTES, 'UTF-8');
+    $managerHtml = htmlspecialchars($manager, ENT_QUOTES, 'UTF-8');
+    $f1Html = htmlspecialchars($f1, ENT_QUOTES, 'UTF-8');
+    $f2Html = htmlspecialchars($f2, ENT_QUOTES, 'UTF-8');
+    $linkHtml = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+
     $mail->Body = "
     <div style='background-color: #f4f4f9; font-family: Arial, sans-serif; padding: 20px;'>
-        <!-- Contenedor principal -->
         <div style='max-width: 500px; margin: auto; background: white; padding: 0; border-radius: 18px; 
                     box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
                     border: 5px solid; 
-                    border-image: linear-gradient(to right, grey, red) 1;'><!-- Cambiado max-width a 500px -->
-            <!-- Encabezado con imagen de fondo -->
+                    border-image: linear-gradient(to right, grey, red) 1;'>
             <div style='position: relative; text-align: center; height: 200px; 
                         background-image: url(\"cid:header_image\"); 
                         background-size: cover; 
-                        background-position: center -45px; /* Mueve la imagen hacia arriba es 50 ddsadasd*/
+                        background-position: center -45px;
                         border-radius: 10px 10px 0 0;
-                        margin-top: -20px;'><!-- Ajustado background-position -->
-                <!-- Espacio vacío para desplazar -->
+                        margin-top: -20px;'>
             </div>
-            <!-- Contenido principal del correo -->
             <div style='padding: 20px;'>
-                <p style='color: #555; font-size: 18px; text-align: center;'>Dear <strong>$manager</strong>,</p>
-                <p style='color: #555; font-size: 18px; text-align: center;'>The Job Report for HOA <strong>$hoaName</strong> (From <strong>$f1</strong> to <strong>$f2</strong>) has been generated.</p>
+                <p style='color: #555; font-size: 18px; text-align: center;'>Dear <strong>{$managerHtml}</strong>,</p>
+                <p style='color: #555; font-size: 18px; text-align: center;'>The Job Report for HOA <strong>{$hoaNameHtml}</strong> (From <strong>{$f1Html}</strong> to <strong>{$f2Html}</strong>) has been generated.</p>
+                <p style='color: #555; font-size: 15px; text-align: center;'><strong>Jobs:</strong> {$jobsCount}<br><strong>Employees:</strong> {$employeesHtml}</p>
                 <p style='color: #555; font-size: 18px; text-align: center;'>For information security purposes, please remember to log in beforehand.</p>
                 <div style='text-align: center; margin: 30px 0;'>
-                    <a href='$link' style='display: inline-block; padding: 15px 25px; font-size: 16px; font-weight: bold; color: white; 
+                    <a href='{$linkHtml}' style='display: inline-block; padding: 15px 25px; font-size: 16px; font-weight: bold; color: white; 
                         background-color: #007bff; text-decoration: none; border-radius: 5px;'>View Report</a>
-                    </div>
-                        <hr style='border: 0; height: 1px; background: #ddd;'>
-                        <p style='color: #999; font-size: 12px; text-align: center;'>If you have any problems viewing the information, please contact technical support.</p>
-                    </div>
                 </div>
+                <hr style='border: 0; height: 1px; background: #ddd;'>
+                <p style='color: #999; font-size: 12px; text-align: center;'>If you have any problems viewing the information, please contact technical support.</p>
             </div>
         </div>
     </div>
     ";
 
-
     $mail->AddEmbeddedImage('assets/img/pgsinfo.png', 'header_image', 'pgsinfo.png');
-
 
     $mail->send();
     echo "<script>alert('Email sent successfully!'); window.location = 'report-list-group.php';</script>";
 } catch (Exception $e) {
-    echo "<script>alert('Error sending email: {$mail->ErrorInfo}');</script>";
+    echo "<script>alert('Error sending email: " . addslashes($mail->ErrorInfo) . "'); window.location = 'report-list-group.php';</script>";
 }
 ?>

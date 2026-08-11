@@ -88,9 +88,7 @@ $(document).ready(function() {
                     swal(
                         "Report created",
                         (response.messages || "Saved") +
-                            (window.PGS_CAN_EDIT_REPORT
-                                ? " Use the floating Edit button to add the after photo or description."
-                                : ""),
+                            " Go to the Dashboard to edit description, photo, or finalize your unfinished report.",
                         "success"
                     );
                     $("#frm_foto")[0].reset();

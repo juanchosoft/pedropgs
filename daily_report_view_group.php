@@ -28,7 +28,11 @@ if (!empty($errors)) {
 }
 
 if (!empty($_POST['hoa']) && isset($_POST['hoa']) && $_POST['hoa'] > 0) {
-  $rqst = array('hoa' => $_POST['hoa'], 'f1' => $_POST['f1'], 'f2' => $_POST['f2']);
+  $rqst = array(
+    'hoa' => trim((string) $_POST['hoa']),
+    'f1' => trim((string) $_POST['f1']),
+    'f2' => trim((string) $_POST['f2']),
+  );
   $arr  = DailyReport::reportListGroupDownload($rqst);
 
   $isvalid  = $arr['output']['valid'];
@@ -39,11 +43,22 @@ if (!empty($_POST['hoa']) && isset($_POST['hoa']) && $_POST['hoa'] > 0) {
     $data0    = $data[0];
     $id       = $data0['id'] ? $data0['id'] : '';
     $hoa      = isset($data0['nombre']) ? ($data0['nombre']) : '';
-    $employee = isset($data0['usuario']) ? ($data0['usuario']) : '';
     $dtcreate = isset($data0['dtcreate']) ? ($data0['dtcreate']) : '';
     $email    = isset($data0['email']) ? ($data0['email']) : '';
     $manager  = isset($data0['administrador']) ? ($data0['administrador']) : '';
     $address  = isset($data0['ubicacion']) ? ($data0['ubicacion']) : '';
+
+    $employeesUnique = [];
+    foreach ($dataShow as $rowEmp) {
+      $empName = trim((string) ($rowEmp['usuario'] ?? ''));
+      if ($empName !== '') {
+        $employeesUnique[$empName] = $empName;
+      }
+    }
+    $employee = implode(', ', array_values($employeesUnique));
+    if ($employee === '') {
+      $employee = 'N/A';
+    }
   } else {
 ?>
 <script type='text/javascript'>
@@ -365,15 +380,16 @@ if (!empty($_POST['hoa']) && isset($_POST['hoa']) && $_POST['hoa'] > 0) {
         <div><b>Email:</b> <?= htmlspecialchars($email); ?></div>
       </div>
       <div class="col-sm-6" style="font-size:12px;">
-        <div><b>Employee:</b> <?= htmlspecialchars($employee); ?></div>
-        <div><b>Date Range:</b> <?= htmlspecialchars($_POST['f1']); ?> → <?= htmlspecialchars($_POST['f2']); ?></div>
+        <div><b>Employees:</b> <?= htmlspecialchars($employee); ?></div>
+        <div><b>Jobs:</b> <?= (int) count($dataShow); ?></div>
+        <div><b>Date Range:</b> <?= htmlspecialchars(trim((string) $_POST['f1'])); ?> → <?= htmlspecialchars(trim((string) $_POST['f2'])); ?></div>
 
         <!-- Screen-only email button (does not print) -->
         <div class="no-print" style="margin-top:10px;">
           <form action="email.php" method="POST" style="display:inline;">
-            <input id="hoa" name="hoa" type="hidden" value="<?php echo $_POST['hoa']; ?> ">
-            <input id="f1"  name="f1"  type="hidden" value="<?php echo $_POST['f1'] ?> ">
-            <input id="f2"  name="f2"  type="hidden" value="<?php echo $_POST['f2'] ?> ">
+            <input id="hoa" name="hoa" type="hidden" value="<?php echo htmlspecialchars(trim((string) $_POST['hoa']), ENT_QUOTES, 'UTF-8'); ?>">
+            <input id="f1"  name="f1"  type="hidden" value="<?php echo htmlspecialchars(trim((string) $_POST['f1']), ENT_QUOTES, 'UTF-8'); ?>">
+            <input id="f2"  name="f2"  type="hidden" value="<?php echo htmlspecialchars(trim((string) $_POST['f2']), ENT_QUOTES, 'UTF-8'); ?>">
             <button type="submit" class="btn btn-success btn-sm" value="Submit">Send Report by Email</button>
           </form>
         </div>
@@ -390,11 +406,13 @@ if (!empty($_POST['hoa']) && isset($_POST['hoa']) && $_POST['hoa'] > 0) {
         </tr>
       </thead>
       <tbody>
+        <?php foreach ($dataShow as $summaryRow): ?>
         <tr>
-          <td><?= htmlspecialchars($dtcreate); ?></td>
+          <td><?= htmlspecialchars($summaryRow['dtcreate'] ?? ''); ?></td>
           <td><?= htmlspecialchars($hoa); ?></td>
-          <td><?= htmlspecialchars($employee); ?></td>
+          <td><?= htmlspecialchars(trim((string) ($summaryRow['usuario'] ?? ''))); ?></td>
         </tr>
+        <?php endforeach; ?>
       </tbody>
     </table>
 
@@ -411,6 +429,10 @@ if (!empty($_POST['hoa']) && isset($_POST['hoa']) && $_POST['hoa'] > 0) {
   $pageNum = 1;
   foreach ($dataShow as $data) :
     $pageNum++;
+    $itemEmployee = trim((string) ($data['usuario'] ?? ''));
+    if ($itemEmployee === '') {
+      $itemEmployee = 'N/A';
+    }
 
     $img  = (!empty($data["foto_antes"])  && $data["foto_antes"]  !== "no_image.png")
       ? "admin/js/camara/foto/{$data['foto_antes']}"
@@ -428,13 +450,13 @@ if (!empty($_POST['hoa']) && isset($_POST['hoa']) && $_POST['hoa'] > 0) {
           <img src="assets/img/logo3.png" alt="PGS Centrum Logo">
           <div class="title-block">
             <h1>Job Zone Reported</h1>
-            <div class="sub"><?= htmlspecialchars($hoa); ?> • <?= htmlspecialchars($dtcreate); ?></div>
+            <div class="sub"><?= htmlspecialchars($hoa); ?> • <?= htmlspecialchars($data['dtcreate'] ?? $dtcreate); ?></div>
           </div>
         </div>
 
         <div class="meta">
           <div class="pill">Page <?= (int)$pageNum; ?></div>
-          <div><b>Employee:</b> <?= htmlspecialchars($employee); ?></div>
+          <div><b>Employee:</b> <?= htmlspecialchars($itemEmployee); ?></div>
           <div><b>Manager:</b> <?= htmlspecialchars($manager); ?></div>
         </div>
       </div>
@@ -477,8 +499,8 @@ if (!empty($_POST['hoa']) && isset($_POST['hoa']) && $_POST['hoa'] > 0) {
       </div>
 
       <div class="print-footer">
-        <div>PGS Centrum • Job Report #<?= htmlspecialchars($id); ?></div>
-        <div>Generated: <?= htmlspecialchars($dtcreate); ?></div>
+        <div>PGS Centrum • Job Report #<?= htmlspecialchars($data['id']); ?></div>
+        <div>Generated: <?= htmlspecialchars($data['dtcreate'] ?? $dtcreate); ?></div>
       </div>
 
     </div>

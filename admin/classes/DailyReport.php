@@ -152,17 +152,17 @@ class DailyReport
     public static function reportListGroupDownload($rqst)
     {
         $hoa = isset($rqst['hoa']) ? intval($rqst['hoa']) : 0;
-        $f1 = isset($rqst['f1']) ? ($rqst['f1']) : '';
-        $f2 = isset($rqst['f2']) ? ($rqst['f2']) : '';
+        $f1 = isset($rqst['f1']) ? trim((string) $rqst['f1']) : '';
+        $f2 = isset($rqst['f2']) ? trim((string) $rqst['f2']) : '';
 
-        if ($hoa > 0) {
+        if ($hoa > 0 && $f1 !== '' && $f2 !== '') {
 
             $db = new DbConection();
             $pdo = $db->openConect();
 
             $q = "SELECT
                 tbl_unidades.*,
-                tec_usuarios.nombre AS usuario, 
+                TRIM(CONCAT(IFNULL(tec_usuarios.nombre, ''), ' ', IFNULL(tec_usuarios.apellido, ''))) AS usuario,
                 tbl_fotos.*
             FROM 
                 " . $db->getTable('tbl_fotos') . " 
@@ -171,17 +171,25 @@ class DailyReport
             INNER JOIN 
                 " . $db->getTable('tec_usuarios') . " ON tbl_fotos.tbl_usuario_id = tec_usuarios.id
             WHERE 
-                tbl_fotos.tbl_unidad_id = $hoa 
-                AND tbl_fotos.dtcreate BETWEEN '$f1 00:00:01' AND '$f2 23:59:59' ";
-            $result = $pdo->query($q);
-            $arr = array();
-            if ($result) {
-                foreach ($result as $valor) {
-                    $arr[] = $valor;
+                tbl_fotos.tbl_unidad_id = :hoa 
+                AND tbl_fotos.dtcreate BETWEEN :f1 AND :f2
+            ORDER BY tbl_fotos.dtcreate ASC, tec_usuarios.nombre ASC";
+
+            try {
+                $stmt = $pdo->prepare($q);
+                $stmt->execute([
+                    ':hoa' => $hoa,
+                    ':f1' => $f1 . ' 00:00:01',
+                    ':f2' => $f2 . ' 23:59:59',
+                ]);
+                $arr = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                if ($arr) {
+                    $arrjson = array('output' => array('valid' => true, 'response' => $arr));
+                } else {
+                    $arrjson = Util::error_no_result();
                 }
-                $arrjson = array('output' => array('valid' => true, 'response' => $arr));
-            } else {
-                $arrjson = Util::error_no_result();
+            } catch (Exception $e) {
+                $arrjson = Util::error_general('Error loading group report: ' . $e->getMessage());
             }
             $db->closeConect();
             return $arrjson;

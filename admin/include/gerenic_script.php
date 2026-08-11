@@ -32,7 +32,6 @@
   <link href="data/js/select2/select2.min.css" rel="stylesheet" />
   <script src="data/js/select2/select2.min.js"></script>
   <script type="text/javascript" src="admin/js/KBmodal.js"></script>
-  <?php include __DIR__ . '/report_quick_edit_widget.php'; ?>
 <script>
   (function(){
     function norm(p){ return (p || '').split('?')[0].split('#')[0].toLowerCase(); }
