@@ -125,6 +125,23 @@ class Unidades
                 $arrjson = Util::error_missing_data();
             }
         }
+
+        if (!empty($arrjson['output']['valid'])) {
+            $unitTargetId = $id > 0 ? $id : (int) ($arrjson['output']['response'] ?? 0);
+            if ($unitTargetId > 0 && is_file(__DIR__ . '/../bootstrap_pgs.php')) {
+                try {
+                    require_once __DIR__ . '/../bootstrap_pgs.php';
+                    if (class_exists(\Pgs\Units\UnitContactSync::class)) {
+                        \Pgs\Units\UnitContactSync::syncUnit($unitTargetId);
+                    }
+                } catch (\Throwable $e) {
+                    if (class_exists('Util') && method_exists('Util', 'trace_log_error')) {
+                        Util::trace_log_error($e);
+                    }
+                }
+            }
+        }
+
         $db->closeConect();
         return $arrjson;
     }

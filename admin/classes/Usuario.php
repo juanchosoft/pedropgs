@@ -200,18 +200,27 @@ class Usuario
 
             /*
              * Fetch all assigned unidades from the pivot table.
+             * If the pivot is missing (migration not applied), fall back to tbl_unidad_id.
              */
-            $qUnid = "SELECT tbl_unidades_id 
-                      FROM " . $db->getTable('tec_usuarios_has_tbl_unidades') . " 
-                      WHERE tec_usuarios_id = :id 
-                      ORDER BY tbl_unidades_id ASC";
-
-            $stmtUnid = $pdo->prepare($qUnid);
-            $stmtUnid->execute([':id' => $id]);
-
             $unidadIds = array();
-            foreach ($stmtUnid->fetchAll(PDO::FETCH_ASSOC) as $rowUnid) {
-                $unidadIds[] = intval($rowUnid['tbl_unidades_id']);
+            $pivotExists = (int) $pdo->query(
+                "SELECT COUNT(*) FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = 'tec_usuarios_has_tbl_unidades'"
+            )->fetchColumn();
+
+            if ($pivotExists > 0) {
+                $qUnid = "SELECT tbl_unidades_id 
+                          FROM " . $db->getTable('tec_usuarios_has_tbl_unidades') . " 
+                          WHERE tec_usuarios_id = :id 
+                          ORDER BY tbl_unidades_id ASC";
+
+                $stmtUnid = $pdo->prepare($qUnid);
+                $stmtUnid->execute([':id' => $id]);
+
+                foreach ($stmtUnid->fetchAll(PDO::FETCH_ASSOC) as $rowUnid) {
+                    $unidadIds[] = intval($rowUnid['tbl_unidades_id']);
+                }
             }
 
             // Backward compat: if no pivot entries, use tbl_unidad_id from the user record

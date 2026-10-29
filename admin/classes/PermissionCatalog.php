@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../bootstrap_pgs.php';
 /**
  * Catálogo de permisos por KEY (fuente de verdad para seed).
  * legacy_id = ID histórico en tec_permisos / checks getPermission(N).
@@ -107,6 +108,10 @@ final class PermissionCatalog
 
         // Dashboard (session pages that may gain KEY later)
         $add('dashboard.main.view', 'dashboard', 'view', 'Dashboard - View');
+
+        if (class_exists(\Pgs\Migrations\Seed\NewPermissions::class)) {
+            $items = array_merge($items, \Pgs\Migrations\Seed\NewPermissions::definitions());
+        }
 
         return $items;
     }

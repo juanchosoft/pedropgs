@@ -43,6 +43,15 @@ if ($isvalid) {
             $arrReportData[] = $report;
         }
     }
+
+    usort($arrReportData, function ($a, $b) {
+        $idA = (int) ($a['id'] ?? 0);
+        $idB = (int) ($b['id'] ?? 0);
+        if ($idA !== $idB) {
+            return $idB <=> $idA;
+        }
+        return strcmp((string) ($b['dtcreate'] ?? ''), (string) ($a['dtcreate'] ?? ''));
+    });
 }
 
 ?>
@@ -428,7 +437,19 @@ if ($isvalid) {
 
     <!-- Script -->
     <?php include './admin/include/gerenic_script.php'; ?>
-    <?php include './admin/include/generic_dataTables.php'; ?>
+    <script type="text/javascript" src="admin/js/datatables/jquery.dataTables.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        $('#dynamictable').DataTable({
+          autoWidth: true,
+          order: [[0, 'desc']],
+          columnDefs: [{
+            targets: ['_all'],
+            className: 'mdc-data-table__cell'
+          }]
+        });
+      });
+    </script>
 
     <script type="text/javascript" src="./admin/js/camara/camara.js"></script>
     <script type="text/javascript" src="./admin/js/camara/update.js"></script>

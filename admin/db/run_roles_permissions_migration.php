@@ -1,4 +1,5 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 /**
  * Migración RBAC pgscentrum: tablas tec_* + seed + roles por huella + role_id usuarios.
  * Uso: php admin/db/run_roles_permissions_migration.php
@@ -14,6 +15,16 @@ $db = new DbConection();
 $pdo = $db->openConect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+
+$stmtMigLock = $pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tec_migrations'");
+if ((int) $stmtMigLock->fetchColumn() > 0) {
+    $stmtCheck013 = $pdo->prepare("SELECT COUNT(*) FROM tec_migrations WHERE migration = '2026_10_013_permissions_seed' AND status = 'applied'");
+    $stmtCheck013->execute();
+    if ((int) $stmtCheck013->fetchColumn() > 0) {
+        fwrite(STDERR, "ERROR: RBAC fingerprint migration is disabled after 2026_10_013. Use admin/db/migrate.php." . PHP_EOL);
+        exit(1);
+    }
+}
 out('=== RBAC migration start ===');
 
 $pdo->exec("

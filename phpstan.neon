@@ -1,0 +1,14 @@
+parameters:
+    level: 3
+    paths:
+        - admin/classes/Pgs
+        - api
+    scanFiles:
+        - admin/classes/Util.php
+        - admin/classes/DbConection.php
+        - admin/classes/SessionData.php
+        - admin/classes/Authorization.php
+        - admin/classes/PermissionLegacyMap.php
+        - admin/classes/PermissionCatalog.php
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false

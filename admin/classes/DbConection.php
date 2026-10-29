@@ -13,6 +13,10 @@ class DbConection
     $this->pass   = "";
     $this->dbName = "pgscentrum";
 
+    if (PHP_SAPI === 'cli-server' && getenv('APP_ENV') === 'testing') {
+      $this->dbName = "pgscentrum_test";
+    }
+
     // Timestamp (según tu lógica actual)
     $this->server_date = 'DATE_ADD(NOW(),INTERVAL 1 HOUR)';
 

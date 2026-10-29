@@ -3,14 +3,13 @@ require './admin/include/generic_classes.php';
 include './admin/classes/Producto.php';
 include './admin/classes/Unidades.php';
 
-// Permissions
-$view   = SessionData::getPermission(21);
-$create = SessionData::getPermission(17);
-$edit   = SessionData::getPermission(20);
-$delete = SessionData::getPermission(18);
-$enable = SessionData::getPermission(19);
+requirePermission('reportes.daily.view');
 
-if (!$view) { require 'permiso_denegado.php'; }
+$view = SessionData::hasPermission('reportes.daily.view') || SessionData::superAdministrador();
+$create = SessionData::hasPermission('reportes.daily.create') || SessionData::superAdministrador();
+$edit = SessionData::hasPermission('reportes.daily.update') || SessionData::superAdministrador();
+$delete = SessionData::hasPermission('reportes.daily.delete') || SessionData::superAdministrador();
+$enable = SessionData::hasPermission('reportes.daily.enable') || SessionData::superAdministrador();
 
 // Units options
 $arrUnidades = Unidades::getAll(null);
@@ -352,6 +351,9 @@ $modulo = 'Grouped Report Download';
 
                   <div class="actions">
                     <button type="submit" class="btn btnx primary">Search</button>
+                    <button type="button" class="btn btnx" id="btnDownloadPdf" style="background:#0B0F19; color:#fff; border:1px solid #334155;">
+                      <i class="fa fa-file-pdf-o" style="color:#E10600; margin-right:4px;"></i> Download PDF
+                    </button>
                     <button type="button" class="btn btnx" onclick="document.getElementById('hoa').value='seleccione'; document.getElementById('f1').value=''; document.getElementById('f2').value='';">
                       Clear
                     </button>
@@ -375,5 +377,25 @@ $modulo = 'Grouped Report Download';
 
   <?php include './admin/include/gerenic_footer.php'; ?>
   <?php include './admin/include/gerenic_script.php'; ?>
+  <script>
+  (function() {
+    var btn = document.getElementById('btnDownloadPdf');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      var hoa = document.getElementById('hoa').value;
+      var f1 = document.getElementById('f1').value;
+      var f2 = document.getElementById('f2').value;
+      if (!hoa || hoa === 'seleccione') {
+        alert('Please select a property (HOA).');
+        return;
+      }
+      if (!f1 || !f2) {
+        alert('Please select start and end dates.');
+        return;
+      }
+      window.location.href = 'admin/ajax/rqst.php?op=rpt_generate&key=activity_report&unit_id=' + encodeURIComponent(hoa) + '&from=' + encodeURIComponent(f1) + '&to=' + encodeURIComponent(f2);
+    });
+  })();
+  </script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+<?php require_once dirname(__DIR__) . '/bootstrap_pgs.php'; ?>
 <style>
   :root{
     --m-red:#e11d2e;
@@ -384,6 +385,31 @@
       <?php
         $userUnidades = SessionData::getUnidadesUser();
         $esSuperAdmin = SessionData::superAdministrador();
+        $canOperations = SessionData::hasPermission('tareas.tasks.view')
+          || SessionData::hasPermission('tareas.tasks.view_all')
+          || SessionData::hasPermission('servicios.requests.create')
+          || SessionData::hasPermission('servicios.catalog.view')
+          || SessionData::hasPermission('servicios.catalog.manage')
+          || $esSuperAdmin;
+        $canWorkforce = SessionData::hasPermission('disponibilidad.schedule.view')
+          || SessionData::hasPermission('disponibilidad.schedule.manage')
+          || SessionData::hasPermission('disponibilidad.reservations.create')
+          || SessionData::hasPermission('disponibilidad.reservations.manage')
+          || SessionData::hasPermission('disponibilidad.absences.request')
+          || SessionData::hasPermission('disponibilidad.absences.approve')
+          || $esSuperAdmin;
+        $isUnitAdmin = SessionData::getUserType() === 'Administrador'
+          && (class_exists(\Pgs\Auth\PrincipalFactory::class) ? \Pgs\Auth\PrincipalFactory::fromSession()->isUnitAdmin() : true);
+        $canExpenses = !$isUnitAdmin && (
+          SessionData::hasPermission('gastos.expenses.view_all')
+          || SessionData::hasPermission('gastos.expenses.view_own')
+          || SessionData::hasPermission('gastos.expenses.create')
+          || $esSuperAdmin
+        );
+        $canInvoices = SessionData::hasPermission('facturas.invoices.view_own_units')
+          || SessionData::hasPermission('facturas.invoices.manage')
+          || $esSuperAdmin;
+        $canBilling = $canExpenses || $canInvoices;
         $canReports = SessionData::getPermission(7)
           || SessionData::getPermission(9)
           || SessionData::getPermission(21)
@@ -404,6 +430,36 @@
           <small>Dashboard</small>
         </a>
       </li>
+
+      <?php if ($canOperations): ?>
+      <li class="menu-item">
+        <a href="javascript:void(0)" onclick="abrirModal('OPERATIONS')">
+          <div class="icon-box"><i class="fa fa-tasks"></i></div>
+          <div class="menu-label-movil">Operations</div>
+          <small>Services & Tasks</small>
+        </a>
+      </li>
+      <?php endif; ?>
+
+      <?php if ($canWorkforce): ?>
+      <li class="menu-item">
+        <a href="javascript:void(0)" onclick="abrirModal('WORKFORCE')">
+          <div class="icon-box"><i class="fa fa-calendar-check-o"></i></div>
+          <div class="menu-label-movil">Workforce</div>
+          <small>Time & Shifts</small>
+        </a>
+      </li>
+      <?php endif; ?>
+
+      <?php if ($canBilling): ?>
+      <li class="menu-item">
+        <a href="javascript:void(0)" onclick="abrirModal('BILLING')">
+          <div class="icon-box"><i class="fa fa-file-text-o"></i></div>
+          <div class="menu-label-movil">Billing</div>
+          <small>Expenses & Invoices</small>
+        </a>
+      </li>
+      <?php endif; ?>
 
       <?php if ($canReports): ?>
       <li class="menu-item">
@@ -518,7 +574,46 @@
   function abrirModal(titulo) {
     document.getElementById("modalTitle").innerText = titulo;
 
-    if (titulo === "EMPLOYEES") {
+    if (titulo === "OPERATIONS") {
+      document.getElementById("modalContent").innerHTML = `
+        <ul class="modal-list">
+          <?php if (SessionData::hasPermission('tareas.tasks.view') || SessionData::hasPermission('tareas.tasks.view_all') || $esSuperAdmin): ?>
+            <li><a href="./tasks.php">Tasks <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('servicios.requests.create') || $esSuperAdmin): ?>
+            <li><a href="./service_request.php">Service Request <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('servicios.catalog.view') || SessionData::hasPermission('servicios.catalog.manage') || $esSuperAdmin): ?>
+            <li><a href="./services_catalog.php">Services Catalog <span class="chev">›</span></a></li>
+          <?php endif; ?>
+        </ul>
+      `;
+    } else if (titulo === "WORKFORCE") {
+      document.getElementById("modalContent").innerHTML = `
+        <ul class="modal-list">
+          <?php if (SessionData::hasPermission('disponibilidad.schedule.view') || SessionData::hasPermission('disponibilidad.schedule.manage') || $esSuperAdmin): ?>
+            <li><a href="./worker_schedule.php">Schedules <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('disponibilidad.reservations.create') || SessionData::hasPermission('disponibilidad.reservations.manage') || $esSuperAdmin): ?>
+            <li><a href="./reservations.php">Reservations <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('disponibilidad.absences.request') || SessionData::hasPermission('disponibilidad.absences.approve') || $esSuperAdmin): ?>
+            <li><a href="./absences.php">Time Off & Leaves <span class="chev">›</span></a></li>
+          <?php endif; ?>
+        </ul>
+      `;
+    } else if (titulo === "BILLING") {
+      document.getElementById("modalContent").innerHTML = `
+        <ul class="modal-list">
+          <?php if ($canExpenses): ?>
+            <li><a href="./expenses.php">Expenses <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if ($canInvoices): ?>
+            <li><a href="./invoices.php">Invoices <span class="chev">›</span></a></li>
+          <?php endif; ?>
+        </ul>
+      `;
+    } else if (titulo === "EMPLOYEES") {
       document.getElementById("modalContent").innerHTML = `
         <ul class="modal-list">
           <?php if (SessionData::getPermission(27)): ?>
@@ -554,6 +649,8 @@
           <?php if (SessionData::getPermission(22)): ?>
             <li><a href="./check_report_list.php">Show Check List Report <span class="chev">›</span></a></li>
             <li><a href="./calendar.php">Calendar <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('reportes.daily.view')): ?>
             <li><a href="./report-list-group.php">Report List Group Download <span class="chev">›</span></a></li>
           <?php endif; ?>
         </ul>
@@ -566,6 +663,21 @@
           <?php endif; ?>
           <?php if (SessionData::hasPermission('configuracion.roles.view') || SessionData::hasPermission('configuracion.roles.manage') || $esSuperAdmin): ?>
             <li><a href="./roles_permisos.php">Roles & Permissions <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('integraciones.api_tokens.manage') || $esSuperAdmin): ?>
+            <li><a href="./api_tokens.php">API Tokens <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('integraciones.sync.manage') || SessionData::hasPermission('integraciones.whatsapp.manage') || $esSuperAdmin): ?>
+            <li><a href="./integrations.php">Integrations & Sync <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('ia.logs.view') || $esSuperAdmin): ?>
+            <li><a href="./ia_logs.php">AI Logs <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('telefonia.calls.view') || $esSuperAdmin): ?>
+            <li><a href="./call_logs.php">Phone Calls <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if (SessionData::hasPermission('auditoria.logs.view') || $esSuperAdmin): ?>
+            <li><a href="./audit_log.php">Audit Log <span class="chev">›</span></a></li>
           <?php endif; ?>
         </ul>
       `;

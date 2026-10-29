@@ -4,6 +4,7 @@ require_once __DIR__ . '/SessionData.php';
 require_once __DIR__ . '/PermissionLegacyMap.php';
 require_once __DIR__ . '/PermissionCatalog.php';
 require_once __DIR__ . '/Util.php';
+require_once __DIR__ . '/../bootstrap_pgs.php';
 
 /**
  * Authorization core: role + permission KEYs.
@@ -27,6 +28,9 @@ final class Authorization
         }
 
         $permissionKeys = array_values(array_unique($permissionKeys));
+        if ($userType === 'Administrador' && !self::isInternalStaff($pdo, $db, $userId)) {
+            $permissionKeys = \Pgs\Auth\InternalOnlyPermissions::strip($permissionKeys);
+        }
         $legacyIds = PermissionLegacyMap::keysToLegacyIds($permissionKeys);
 
         return [
@@ -64,6 +68,17 @@ final class Authorization
             }
         }
         return true;
+    }
+
+    private static function isInternalStaff(PDO $pdo, DbConection $db, int $userId): bool
+    {
+        try {
+            $stmt = $pdo->prepare('SELECT is_internal_staff FROM ' . $db->getTable('tec_usuarios') . ' WHERE id = :id');
+            $stmt->execute([':id' => $userId]);
+            return (int) $stmt->fetchColumn() === 1;
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 
     private static function tablesExist(PDO $pdo, DbConection $db): bool

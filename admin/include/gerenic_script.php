@@ -263,3 +263,20 @@
 
 <!-- Campo para la configuracion de la impresora termina -->
 <input type="hidden" id="config_impresion_termica" name="config_impresion_termica" value="<?php echo SessionData::getConfigImpresionPOS();?>">
+<?php if (!empty($_SESSION['csrf_token'])): ?>
+<meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+<?php endif; ?>
+<script src="admin/js/lib/pgs.js"></script>
+
+<?php
+if (isset($_SESSION['session_user'])) {
+  require_once __DIR__ . '/../classes/Authorization.php';
+  require_once __DIR__ . '/../bootstrap_pgs.php';
+  $pgsP = \Pgs\Core\Web\PgsPage::principalOrNull();
+  if ($pgsP && $pgsP->can('ia.asistente.use') && !defined('PGS_IA_WIDGET_RENDERED')) {
+    define('PGS_IA_WIDGET_RENDERED', true);
+    include __DIR__ . '/ia_widget.php';
+  }
+}
+?>
+

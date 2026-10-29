@@ -90,6 +90,13 @@ var USUARIO = {
                 : (res.tbl_unidad_id > 0 ? [res.tbl_unidad_id] : []);
             $("#tbl_unidad_id").val(unidadIds).trigger("change");
             $("#habilitado").val(res.habilitado).trigger("change");
+
+            // Populate employee_pk, is_internal_staff, and voice_pin_reset
+            $("#is_internal_staff").prop("checked", parseInt(res.is_internal_staff) === 1);
+            $("#employee_pk_display").val(res.employee_pk ? ("PK: " + res.employee_pk + (res.employee_nombre ? " - " + res.employee_nombre : "")) : "None");
+            $("#boxSelectEmployeePk").hide();
+            $("#wrap_voice_pin_reset").show();
+
             $("#myModal").modal();
 
             // Asociación usuario ↔ empleado (sin Select2 si ya está vinculado)
@@ -278,3 +285,104 @@ var USUARIO = {
         }, 1000);
     },
 };
+
+// Handlers for Voice PIN Reset, Employee PK Link, and Internal Staff toggle
+$(document).ready(function() {
+    // Reset Voice PIN
+    $(document).on('click', '#btnResetVoicePin', function() {
+        var uid = $('#id').val();
+        if (!uid) return;
+        Swal.fire({
+            title: "Reset Voice PIN?",
+            text: "This will clear the voice PIN hash and unlock any temporary or admin lock. The user will be notified to set a new PIN.",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, reset PIN",
+            cancelButtonText: "Cancel"
+        }).then(function(result) {
+            if (result.value) {
+                var csrf = $('meta[name="csrf-token"]').attr('content') || '';
+                $.ajax({
+                    url: 'admin/ajax/rqst.php?op=prf_pin_reset',
+                    type: 'POST',
+                    data: { user_id: uid },
+                    headers: { 'X-CSRF-Token': csrf },
+                    dataType: 'json',
+                    success: function(r) {
+                        if (r && r.output && r.output.valid) {
+                            Swal.fire("Reset Complete", "Voice PIN has been reset successfully.", "success");
+                        } else {
+                            Swal.fire("Error", (r && r.output && r.output.response ? r.output.response : "Could not reset PIN"), "error");
+                        }
+                    },
+                    error: function() {
+                        Swal.fire("Error", "Server error while resetting PIN.", "error");
+                    }
+                });
+            }
+        });
+    });
+
+    // Toggle Employee PK selector
+    $(document).on('click', '#btnChangeEmployeePk', function() {
+        $('#boxSelectEmployeePk').slideToggle(150);
+    });
+
+    // Link Employee PK on select
+    $(document).on('change', '#select_employee_pk', function() {
+        var pk = $(this).val();
+        var uid = $('#id').val();
+        if (!pk || !uid) return;
+        var csrf = $('meta[name="csrf-token"]').attr('content') || '';
+        $.ajax({
+            url: 'admin/ajax/rqst.php?op=prf_employee_link',
+            type: 'POST',
+            data: { user_id: uid, employee_pk: pk },
+            headers: { 'X-CSRF-Token': csrf },
+            dataType: 'json',
+            success: function(r) {
+                if (r && r.output && r.output.valid) {
+                    var d = r.output.response;
+                    $('#employee_pk_display').val('PK: ' + d.employee_pk + ' - ' + d.employee_name);
+                    $('#boxSelectEmployeePk').hide();
+                    Swal.fire("Linked", "Employee PK successfully linked to user account.", "success");
+                } else {
+                    Swal.fire("Error", (r && r.output && r.output.response ? r.output.response : "Could not link employee"), "error");
+                }
+            },
+            error: function() {
+                Swal.fire("Error", "Server error while linking employee.", "error");
+            }
+        });
+    });
+
+    // Internal staff switch (auto-save on change when user exists)
+    $(document).on('change', '#is_internal_staff', function() {
+        var uid = $('#id').val();
+        if (!uid) return; // New user will save on submit
+        var isInt = $(this).is(':checked') ? 1 : 0;
+        var csrf = $('meta[name="csrf-token"]').attr('content') || '';
+        $.ajax({
+            url: 'admin/ajax/rqst.php?op=prf_internal_staff',
+            type: 'POST',
+            data: { user_id: uid, is_internal_staff: isInt },
+            headers: { 'X-CSRF-Token': csrf },
+            dataType: 'json',
+            success: function(r) {
+                if (r && r.output && r.output.valid) {
+                    md.showNotificationAdmin("top", "right", "success", "<b>Internal staff status updated.</b>", "success", 2000);
+                } else {
+                    Swal.fire("Error", (r && r.output && r.output.response ? r.output.response : "Could not update internal staff setting"), "error");
+                }
+            }
+        });
+    });
+
+    // Clear extra state on modal hide
+    $('#myModal').on('hidden.bs.modal', function() {
+        $('#wrap_voice_pin_reset').hide();
+        $('#is_internal_staff').prop('checked', false);
+        $('#employee_pk_display').val('None');
+        $('#boxSelectEmployeePk').hide();
+    });
+});

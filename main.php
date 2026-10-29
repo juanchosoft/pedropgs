@@ -2,11 +2,15 @@
 require './admin/include/generic_classes.php';
 include './admin/classes/Main.php';
 include './admin/classes/Unidades.php';
+require_once './admin/bootstrap_pgs.php';
 
 // Home info
 $arr = Main::getDataMain(null);
 $isvalid = $arr['output']['valid'];
 $modulo = 'Dashboard';
+
+$dashPrincipal = \Pgs\Core\Web\PgsPage::principal();
+$dashSummary = (new \Pgs\Dashboard\DashboardService())->summary($dashPrincipal);
 
 
 /*
@@ -1150,6 +1154,71 @@ $arrUnidadesData = $arrUnidades;
           <button type="button" class="close h-100" data-dismiss="alert" aria-label="Close">
             <span><i class="mdi mdi-close"></i></span>
           </button>
+        </div>
+
+        <!-- ✅ Operational KPI Cards -->
+        <div class="row mb-3" id="pgsDashboardKpiRow">
+          <?php if (!empty($dashSummary['can_tasks'])): ?>
+          <div class="col-xl-3 col-sm-6 mb-3">
+            <a href="tasks.php" class="text-decoration-none">
+              <div class="pgs-kpi h-100 d-flex align-items-center justify-content-between p-3 border shadow-sm" style="background:#fff;border-radius:18px;">
+                <div>
+                  <span class="pgs-kpi-label d-block text-muted small font-weight-bold">MY OPEN TASKS</span>
+                  <h3 class="mt-1 font-weight-bold text-dark mb-0" id="kpiMyOpenTasks"><?php echo (int) $dashSummary['my_open_tasks']; ?></h3>
+                </div>
+                <div class="icon-box" style="width:48px;height:48px;border-radius:14px;background:rgba(225,29,46,.10);display:flex;align-items:center;justify-content:center;color:#E10600;font-size:20px;">
+                  <i class="fa fa-tasks"></i>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="col-xl-3 col-sm-6 mb-3">
+            <a href="tasks.php?status=pending" class="text-decoration-none">
+              <div class="pgs-kpi h-100 d-flex align-items-center justify-content-between p-3 border shadow-sm" style="background:#fff;border-radius:18px;">
+                <div>
+                  <span class="pgs-kpi-label d-block text-muted small font-weight-bold">PENDING REQUESTS</span>
+                  <h3 class="mt-1 font-weight-bold text-dark mb-0" id="kpiPendingRequests"><?php echo (int) $dashSummary['pending_requests']; ?></h3>
+                </div>
+                <div class="icon-box" style="width:48px;height:48px;border-radius:14px;background:rgba(245,158,11,.10);display:flex;align-items:center;justify-content:center;color:#f59e0b;font-size:20px;">
+                  <i class="fa fa-clock-o"></i>
+                </div>
+              </div>
+            </a>
+          </div>
+          <?php endif; ?>
+
+          <?php if (!empty($dashSummary['can_reservations'])): ?>
+          <div class="col-xl-3 col-sm-6 mb-3">
+            <a href="reservations.php" class="text-decoration-none">
+              <div class="pgs-kpi h-100 d-flex align-items-center justify-content-between p-3 border shadow-sm" style="background:#fff;border-radius:18px;">
+                <div>
+                  <span class="pgs-kpi-label d-block text-muted small font-weight-bold">UPCOMING RESERVATIONS</span>
+                  <h3 class="mt-1 font-weight-bold text-dark mb-0" id="kpiUpcomingReservations"><?php echo (int) $dashSummary['upcoming_reservations']; ?></h3>
+                </div>
+                <div class="icon-box" style="width:48px;height:48px;border-radius:14px;background:rgba(11,15,25,.08);display:flex;align-items:center;justify-content:center;color:#0B0F19;font-size:20px;">
+                  <i class="fa fa-calendar-check-o"></i>
+                </div>
+              </div>
+            </a>
+          </div>
+          <?php endif; ?>
+
+          <?php if (!empty($dashSummary['can_invoices'])): ?>
+          <div class="col-xl-3 col-sm-6 mb-3">
+            <a href="invoices.php?status=overdue" class="text-decoration-none">
+              <div class="pgs-kpi h-100 d-flex align-items-center justify-content-between p-3 border shadow-sm" style="background:#fff;border-radius:18px;">
+                <div>
+                  <span class="pgs-kpi-label d-block text-muted small font-weight-bold">OVERDUE INVOICES</span>
+                  <h3 class="mt-1 font-weight-bold text-danger mb-0" id="kpiOverdueInvoices"><?php echo (int) $dashSummary['overdue_invoices']; ?></h3>
+                </div>
+                <div class="icon-box" style="width:48px;height:48px;border-radius:14px;background:rgba(239,35,60,.12);display:flex;align-items:center;justify-content:center;color:#E10600;font-size:20px;">
+                  <i class="fa fa-file-text-o"></i>
+                </div>
+              </div>
+            </a>
+          </div>
+          <?php endif; ?>
         </div>
 
         <?php if ($hasRestDayInfo): ?>

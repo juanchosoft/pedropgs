@@ -1644,6 +1644,64 @@ $modulo = 'Users';
                 </div>
               </div>
 
+              <!-- Voice PIN Reset, Employee PK Link, Internal Staff Toggle -->
+              <?php if (SessionData::superAdministrador()): ?>
+              <div class="col-sm-6" id="wrap_internal_staff">
+                <div class="form-group">
+                  <label class="bmd-label-floating font-weight-bold">Internal Staff (PGS Centrum)</label>
+                  <div class="custom-control custom-switch mt-2">
+                    <input type="checkbox" class="custom-control-input" id="is_internal_staff" name="is_internal_staff" value="1">
+                    <label class="custom-control-label font-weight-bold" for="is_internal_staff">PGS Internal Personnel</label>
+                  </div>
+                  <small class="form-text text-muted" id="help_internal_staff">
+                    For Administrator: Off = Property Manager (never sees expenses / D-25 Safeguard).
+                  </small>
+                </div>
+              </div>
+              <?php endif; ?>
+
+              <div class="col-sm-6" id="wrap_employee_pk">
+                <div class="form-group">
+                  <label class="bmd-label-floating font-weight-bold">Linked Employee (PK)</label>
+                  <div class="input-group">
+                    <input type="text" class="form-control bg-light" id="employee_pk_display" readonly placeholder="None">
+                    <div class="input-group-append">
+                      <button class="btn btn-outline-secondary btn-sm" type="button" id="btnChangeEmployeePk" title="Change linked employee">
+                        <i class="fa fa-link"></i> Link
+                      </button>
+                    </div>
+                  </div>
+                  <div id="boxSelectEmployeePk" style="display:none; margin-top:8px;">
+                    <select class="form-control" id="select_employee_pk" style="width:100%;">
+                      <option value="">Select Employee to link...</option>
+                      <?php
+                        $dbConTmp = new DbConection();
+                        $pdoTmp = $dbConTmp->openConect();
+                        $empListStmt = $pdoTmp->query("SELECT id, cc, nombre FROM tec_employee WHERE enable = 'si' ORDER BY nombre ASC");
+                        if ($empListStmt) {
+                          while ($eRow = $empListStmt->fetch(PDO::FETCH_ASSOC)) {
+                            echo "<option value='{$eRow['id']}'>" . htmlspecialchars($eRow['nombre']) . " (CC: {$eRow['cc']})</option>";
+                          }
+                        }
+                        $dbConTmp->closeConect();
+                      ?>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm-6" id="wrap_voice_pin_reset" style="display:none;">
+                <div class="form-group">
+                  <label class="bmd-label-floating font-weight-bold">Voice PIN Management</label>
+                  <div>
+                    <button type="button" class="btn btn-warning btn-sm" id="btnResetVoicePin">
+                      <i class="fa fa-refresh mr-1"></i> Reset Voice PIN
+                    </button>
+                  </div>
+                  <small class="form-text text-muted">Clears PIN hash and locks so the user can set a new PIN.</small>
+                </div>
+              </div>
+
             </div>
           </form>
         </div>

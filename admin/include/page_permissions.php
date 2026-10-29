@@ -28,11 +28,29 @@ final class PagePermissions
         'daily_report_group.php' => 'reportes.daily.view',
         'daily_report_view.php' => 'reportes.daily.view',
         'daily_report_view_group.php' => 'reportes.daily.view',
+        'report-list-group.php' => 'reportes.daily.view',
+        'email.php' => 'reportes.daily.view',
         'categorias.php' => 'reportes.daily.view',
         'check_list.php' => 'checklist.checklist.view',
         'check_list_villasol.php' => 'checklist.checklist.view',
         'see_check.php' => 'checklist.checklist.view',
         'check_report_list.php' => 'checklist.checklist.view',
+        'services_catalog.php' => 'servicios.catalog.view',
+        'service_request.php' => 'servicios.requests.create',
+        'tasks.php' => ['tareas.tasks.view', 'tareas.tasks.view_all'],
+        'task_view.php' => ['tareas.tasks.view', 'tareas.tasks.view_all'],
+        'worker_schedule.php' => 'disponibilidad.schedule.view',
+        'absences.php' => ['disponibilidad.absences.request', 'disponibilidad.absences.approve'],
+        'reservations.php' => ['disponibilidad.reservations.create', 'disponibilidad.reservations.manage'],
+        'expenses.php' => ['gastos.expenses.view_own', 'gastos.expenses.view_all', 'gastos.expenses.create'],
+        'invoices.php' => ['facturas.invoices.view_own_units', 'facturas.invoices.manage'],
+        'notifications.php' => 'notificaciones.inbox.view',
+        'my_profile.php' => null,
+        'api_tokens.php' => 'integraciones.api_tokens.manage',
+        'integrations.php' => ['integraciones.sync.manage', 'integraciones.whatsapp.manage'],
+        'ia_logs.php' => 'ia.logs.view',
+        'call_logs.php' => 'telefonia.calls.view',
+        'audit_log.php' => 'auditoria.logs.view',
         // main.php: home after login — any authenticated user (session checked elsewhere)
     ];
 
@@ -42,10 +60,13 @@ final class PagePermissions
         if ($script === '' || in_array($script, ['login.php', 'logout.php', 'index.php', 'permiso_denegado.php'], true)) {
             return;
         }
-        if (!isset(self::PAGE_VIEW[$script])) {
+        if (!array_key_exists($script, self::PAGE_VIEW)) {
             return; // other pages keep their own getPermission checks via bridge
         }
         $required = self::PAGE_VIEW[$script];
+        if ($required === null) {
+            return; // session-only page
+        }
         if (is_array($required)) {
             if (!Authorization::canAny($required)) {
                 require __DIR__ . '/../../permiso_denegado.php';

@@ -509,7 +509,8 @@ foreach ($arrUnidades as $val) {
                   <div class="col-sm-3">
                     <div class="form-group">
                       <label class="bmd-label-floating">Rest Days</label>
-                      <input type="text" class="form-control only-numbers" id="dias_descanso" name="dias_descanso" inputmode="numeric" pattern="[0-9]*" autocomplete="off" onkeypress="return soloNumeros(event);" oninput="limpiarSoloNumeros(this);">
+                      <input type="text" class="form-control" id="dias_descanso" name="dias_descanso" readonly style="background:#f8f9fa;">
+                      <small class="form-text text-muted">Managed in <a href="absences.php#balances" class="font-weight-bold" style="color:#e11d2e;">Time Off</a></small>
                     </div>
                   </div>
 

@@ -1,0 +1,7 @@
+Options -Indexes
+<IfModule mod_authz_core.c>
+  Require all denied
+  <Files "migrate.php">
+    Require all granted
+  </Files>
+</IfModule>

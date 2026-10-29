@@ -2,14 +2,7 @@
 require './admin/include/generic_classes.php';
 include './admin/classes/DailyReport.php';
 
-// Permissions
-$view   = SessionData::getPermission(22);
-$create = SessionData::getPermission(23);
-$edit   = SessionData::getPermission(24);
-$delete = SessionData::getPermission(25);
-$enable = SessionData::getPermission(26);
-
-if (!$view) { require 'permiso_denegado.php'; }
+requirePermission('reportes.daily.view');
 
 $errors = [];
 

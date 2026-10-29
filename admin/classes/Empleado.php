@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../bootstrap_pgs.php';
 
 
 
@@ -133,8 +134,10 @@ class Empleado
                 'enable' => $enable,
                 'genero' => $genero,
                 'tbl_unidad_id' => $tbl_unidad_id,
-                'dias_descanso' => $dias_descanso,
             );
+            if (!\Pgs\Migrations\MigrationState::isApplied('2026_10_015_leave_balances')) {
+                $arrfieldscomma['dias_descanso'] = $dias_descanso;
+            }
 
             $arrfieldsnocomma = array('dtcreate' => Util::date_now_server());
             $q = Util::make_query_update($table, "id = '$id'", $arrfieldscomma, $arrfieldsnocomma);

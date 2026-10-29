@@ -1,4 +1,5 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 /**
  * Verify RBAC migration health.
  * Usage: php admin/db/verify_roles_permissions.php

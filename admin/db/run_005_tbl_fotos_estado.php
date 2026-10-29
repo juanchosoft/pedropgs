@@ -1,4 +1,5 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 /**
  * Aplica admin/db/005_tbl_fotos_estado.sql
  * Uso: php admin/db/run_005_tbl_fotos_estado.php

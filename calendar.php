@@ -22,6 +22,7 @@ $modulo = 'Calendar';
 <html lang="en">
 <head>
   <?php include './admin/include/generic_head.php'; ?>
+  <link rel="stylesheet" href="./assets/vendor/fullcalendar/css/fullcalendar.min.css"/>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
@@ -366,42 +367,59 @@ $modulo = 'Calendar';
                   $isSuper = ($tipo === 'SuperAdministrador');
                 ?>
 
-                <?php if ($isSuper): ?>
-                  <div class="tabs" id="calTabs">
-                    <button type="button" class="tab" data-target="calBoth">Split View</button>
+                  <div class="tabs mb-3" id="calTabs">
+                    <button type="button" class="tab active" data-target="calOpsFeed">PGS Operations (Live)</button>
+                    <?php if ($isSuper): ?>
+                      <button type="button" class="tab" data-target="calBoth">Split View (Google)</button>
+                      <button type="button" class="tab" data-target="cal8">Unit 8 (Google)</button>
+                      <button type="button" class="tab" data-target="cal7">Unit 7 (Google)</button>
+                    <?php else: ?>
+                      <?php if ($unidad_id == 8 || $unidad_id == 7): ?>
+                        <button type="button" class="tab" data-target="calSingle">Unit <?php echo (int)$unidad_id; ?> (Google)</button>
+                      <?php endif; ?>
+                    <?php endif; ?>
                   </div>
 
-                  <?php
-                    renderCalendarFrame($calendars['unidad_8'], 'cal8', 'Unit 8 Calendar');
-                    renderCalendarFrame($calendars['unidad_7'], 'cal7', 'Unit 7 Calendar');
-                  ?>
-
-                  <div class="frame-wrap cal-frame" id="calBoth" data-label="Split View" style="display:none;">
-                    <div class="loading"><div class="spinner"></div><div class="txt">Loading calendars…<br><span style="opacity:.75">Split View</span></div></div>
-                    <div style="display:grid; grid-template-columns: 1fr; gap:12px; padding:12px;">
-                      <div style="border:1px solid rgba(2,6,23,.08); border-radius:16px; overflow:hidden;">
-                        <iframe id="cal8b" src="<?php echo htmlspecialchars($calendars['unidad_8']); ?>" loading="lazy" style="height:520px;"></iframe>
-                      </div>
-                      <div style="border:1px solid rgba(2,6,23,.08); border-radius:16px; overflow:hidden;">
-                        <iframe id="cal7b" src="<?php echo htmlspecialchars($calendars['unidad_7']); ?>" loading="lazy" style="height:520px;"></iframe>
+                  <!-- Live PGS Operations FullCalendar Feed -->
+                  <div class="frame-wrap cal-frame" id="calOpsFeed" data-label="PGS Operations (Live)" style="display:block; padding:16px; background:#fff; border-radius:18px; border:1px solid rgba(2,6,23,.08);">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                      <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <span class="badge" style="background:#E10600; color:#fff; padding:6px 10px; border-radius:12px; font-weight:700;"><i class="fa fa-tasks mr-1"></i> Tasks (#E10600)</span>
+                        <span class="badge" style="background:#0B0F19; color:#fff; padding:6px 10px; border-radius:12px; font-weight:700;"><i class="fa fa-calendar-check-o mr-1"></i> Reservations (#0B0F19)</span>
+                        <span class="badge" style="background:#64748b; color:#fff; padding:6px 10px; border-radius:12px; font-weight:700;"><i class="fa fa-plane mr-1"></i> Time Off (#64748b)</span>
                       </div>
                     </div>
+                    <div id="pgsFullCalendar"></div>
                   </div>
 
-                <?php else: ?>
-                  <?php
-                    if ($unidad_id == 8) {
-                      renderCalendarFrame($calendars['unidad_8'], 'calSingle', 'Unit 8 Calendar');
-                    } elseif ($unidad_id == 7) {
-                      renderCalendarFrame($calendars['unidad_7'], 'calSingle', 'Unit 7 Calendar');
-                    } else {
-                      echo '<div class="hint"><b>No calendar available</b> for your unit. Please contact the administrator.</div>';
-                    }
-                  ?>
-                <?php endif; ?>
+                  <?php if ($isSuper): ?>
+                    <?php
+                      renderCalendarFrame($calendars['unidad_8'], 'cal8', 'Unit 8 Calendar');
+                      renderCalendarFrame($calendars['unidad_7'], 'cal7', 'Unit 7 Calendar');
+                    ?>
+                    <div class="frame-wrap cal-frame" id="calBoth" data-label="Split View" style="display:none;">
+                      <div class="loading"><div class="spinner"></div><div class="txt">Loading calendars…<br><span style="opacity:.75">Split View</span></div></div>
+                      <div style="display:grid; grid-template-columns: 1fr; gap:12px; padding:12px;">
+                        <div style="border:1px solid rgba(2,6,23,.08); border-radius:16px; overflow:hidden;">
+                          <iframe id="cal8b" src="<?php echo htmlspecialchars($calendars['unidad_8']); ?>" loading="lazy" style="height:520px;"></iframe>
+                        </div>
+                        <div style="border:1px solid rgba(2,6,23,.08); border-radius:16px; overflow:hidden;">
+                          <iframe id="cal7b" src="<?php echo htmlspecialchars($calendars['unidad_7']); ?>" loading="lazy" style="height:520px;"></iframe>
+                        </div>
+                      </div>
+                    </div>
+                  <?php else: ?>
+                    <?php
+                      if ($unidad_id == 8) {
+                        renderCalendarFrame($calendars['unidad_8'], 'calSingle', 'Unit 8 Calendar');
+                      } elseif ($unidad_id == 7) {
+                        renderCalendarFrame($calendars['unidad_7'], 'calSingle', 'Unit 7 Calendar');
+                      }
+                    ?>
+                  <?php endif; ?>
 
-                <div class="hint">
-                  <b>Tip:</b> Use <b>Reload</b> if Google Calendar takes too long to render. This view is optimized for desktop, tablet, and mobile.
+                <div class="hint mt-3">
+                  <b>Tip:</b> Click on any live task, reservation, or leave event to open its detail page directly.
                 </div>
               </div>
             </div>
@@ -416,6 +434,7 @@ $modulo = 'Calendar';
   <?php include './admin/include/gerenic_script.php'; ?>
   <?php include './admin/include/generic_search.php'; ?>
   <?php include './admin/include/generic_dataTables.php'; ?>
+  <script src="./assets/vendor/fullcalendar/js/fullcalendar.min.js"></script>
 
   <script>
   (function(){
@@ -431,6 +450,44 @@ $modulo = 'Calendar';
 
         ifr.addEventListener('load', ()=> loader.style.display = 'none', { once:false });
         setTimeout(()=>{ loader.style.display = 'none'; }, 3500);
+      });
+    }
+
+    var calendarInitialized = false;
+    function initFullCalendar() {
+      if (calendarInitialized) {
+        $('#pgsFullCalendar').fullCalendar('refetchEvents');
+        return;
+      }
+      calendarInitialized = true;
+      $('#pgsFullCalendar').fullCalendar({
+        header: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'month,agendaWeek,agendaDay,listMonth'
+        },
+        defaultView: 'month',
+        navLinks: true,
+        editable: false,
+        eventLimit: true,
+        events: function(start, end, timezone, callback) {
+          var from = start.format('YYYY-MM-DD');
+          var to = end.format('YYYY-MM-DD');
+          Pgs.ajax('cal_events', { start: from, end: to }, {
+            onSuccess: function(res) {
+              callback(res.data || []);
+            },
+            onError: function() {
+              callback([]);
+            }
+          });
+        },
+        eventClick: function(event) {
+          if (event.url) {
+            window.location.href = event.url;
+            return false;
+          }
+        }
       });
     }
 
@@ -450,9 +507,13 @@ $modulo = 'Calendar';
         el.style.display = 'block';
         setBadge(el.getAttribute('data-label') || 'Calendar');
       }
+
+      if (targetId === 'calOpsFeed') {
+        initFullCalendar();
+      }
     }
 
-    // SuperAdmin tabs
+    // Tabs
     const tabs = document.getElementById('calTabs');
     if(tabs){
       tabs.addEventListener('click', (e)=>{
@@ -463,48 +524,41 @@ $modulo = 'Calendar';
         btn.classList.add('active');
 
         const tId = btn.getAttribute('data-target');
-        if(tId === 'cal8') showFrame('cal8');
-        if(tId === 'cal7') showFrame('cal7');
-        if(tId === 'calBoth') showFrame('calBoth');
+        showFrame(tId);
       });
 
-      // ✅ DEFAULT = Split View
-      const splitBtn = tabs.querySelector('.tab[data-target="calBoth"]');
-      if(splitBtn){
-        tabs.querySelectorAll('.tab').forEach(t=> t.classList.remove('active'));
-        splitBtn.classList.add('active');
-      }
-      showFrame('calBoth');
-
-    } else {
-      // non-super: show first available frame
-      const single = document.querySelector('.pgs-cal .cal-frame');
-      if(single){
-        single.style.display = 'block';
-        setBadge(single.getAttribute('data-label') || 'Calendar');
-      } else {
-        setBadge('Calendar');
-      }
+      // Default = calOpsFeed
+      showFrame('calOpsFeed');
     }
 
     // Buttons
-    document.getElementById('btnReload')?.addEventListener('click', ()=> location.reload());
+    document.getElementById('btnReload')?.addEventListener('click', function(){
+      if (calendarInitialized && $('#calOpsFeed').is(':visible')) {
+        $('#pgsFullCalendar').fullCalendar('refetchEvents');
+      } else {
+        location.reload();
+      }
+    });
 
-    document.getElementById('btnToday')?.addEventListener('click', ()=>{
-      document.querySelectorAll('.pgs-cal iframe').forEach(ifr=>{
-        try{
-          const src = ifr.getAttribute('src') || '';
-          if(!src) return;
-          const u = new URL(src, window.location.href);
-          u.searchParams.set('ts', String(Date.now()));
-          ifr.setAttribute('src', u.toString());
-        }catch(err){}
-      });
-      setBadge('Today');
+    document.getElementById('btnToday')?.addEventListener('click', function(){
+      if (calendarInitialized && $('#calOpsFeed').is(':visible')) {
+        $('#pgsFullCalendar').fullCalendar('today');
+      } else {
+        document.querySelectorAll('.pgs-cal iframe').forEach(ifr=>{
+          try{
+            const src = ifr.getAttribute('src') || '';
+            if(!src) return;
+            const u = new URL(src, window.location.href);
+            u.searchParams.set('ts', String(Date.now()));
+            ifr.setAttribute('src', u.toString());
+          }catch(err){}
+        });
+        setBadge('Today');
+      }
     });
 
     hideLoaders();
   })();
-</script>
+  </script>
 </body>
 </html>

@@ -358,12 +358,43 @@
                         </a>
                     </li>
 
+                    <?php if (SessionData::hasPermission('notificaciones.inbox.view') || SessionData::superAdministrador()): ?>
+                    <li class="nav-item dropdown notification_dropdown" id="ntfBellDropdown">
+                        <a class="nav-link bell bell-link nav-link--saas position-relative" href="javascript:void(0)" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Notifications" id="ntfBellLink">
+                            <i class="fa fa-bell" style="font-size:18px;"></i>
+                            <span class="badge badge-danger text-white font-weight-bold" id="ntfBadgeCount" style="display:none; position:absolute; top:-2px; right:-2px; font-size:10px; padding:2px 5px; border-radius:10px; background:#E10600;">0</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right p-0 shadow" style="min-width:320px; max-width:380px; background:#121620; border:1px solid rgba(255,255,255,0.12); border-radius:12px; z-index:99999;">
+                            <div class="d-flex align-items-center justify-content-between p-3" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+                                <h6 class="mb-0 text-white font-weight-bold" style="font-size:14px;"><i class="fa fa-bell text-danger mr-2"></i>Notifications</h6>
+                                <a href="javascript:void(0)" id="ntfHeaderMarkAllRead" class="text-muted small" style="text-decoration:none;"><i class="fa fa-check mr-1"></i>Mark all read</a>
+                            </div>
+                            <div id="ntfHeaderDropdownList" style="max-height:280px; overflow-y:auto;">
+                                <div class="p-3 text-center text-muted small">Loading...</div>
+                            </div>
+                            <div class="p-2 text-center" style="border-top:1px solid rgba(255,255,255,0.08);">
+                                <a href="notifications.php" class="btn btn-sm btn-block text-white" style="background:#ef233c; border-radius:8px; font-weight:600;">View all notifications</a>
+                            </div>
+                        </div>
+                    </li>
+                    <?php endif; ?>
+
                     <li class="nav-item dropdown header-profile header-profile--saas">
                         <a class="nav-link nav-link--saas" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <span class="avatar-wrap">
                                 <img src="<?php echo SessionData::getAvatar(); ?>" width="20" alt="" />
                             </span>
                         </a>
+                        <div class="dropdown-menu dropdown-menu-right" style="background:#121620; border:1px solid rgba(255,255,255,0.12); border-radius:10px;">
+                            <a href="my_profile.php" class="dropdown-item ai-icon text-white">
+                                <i class="fa fa-user-o text-primary mr-2"></i>
+                                <span>My Profile</span>
+                            </a>
+                            <a href="logout.php" class="dropdown-item ai-icon text-danger">
+                                <i class="fa fa-power-off mr-2"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
                     </li>
 
                     <li class="nav-item notification_dropdown">
@@ -377,3 +408,83 @@
         </nav>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var badge = document.getElementById('ntfBadgeCount');
+    var bellLink = document.getElementById('ntfBellLink');
+    var listContainer = document.getElementById('ntfHeaderDropdownList');
+    var markAllBtn = document.getElementById('ntfHeaderMarkAllRead');
+
+    if (!bellLink) return;
+
+    function refreshUnread() {
+        fetch('admin/ajax/rqst.php?op=ntf_unread_count')
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                if (d.ok && typeof d.data.unread_count === 'number') {
+                    var c = d.data.unread_count;
+                    if (c > 0) {
+                        badge.textContent = c > 99 ? '99+' : c;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(function(){});
+    }
+
+    refreshUnread();
+    setInterval(refreshUnread, 120000);
+
+    bellLink.addEventListener('click', function () {
+        fetch('admin/ajax/rqst.php?op=ntf_list&per_page=10')
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                if (!d.ok || !d.data.items || d.data.items.length === 0) {
+                    listContainer.innerHTML = '<div class="p-3 text-center text-muted small">No notifications yet.</div>';
+                    return;
+                }
+                var html = '';
+                d.data.items.forEach(function(item){
+                    var isUnread = !item.read_at;
+                    var bg = isUnread ? 'background:rgba(239,35,60,0.08);' : '';
+                    var link = item.link_url ? item.link_url : 'notifications.php';
+                    html += '<a href="' + link + '" class="d-block p-2 text-decoration-none border-bottom" style="border-color:rgba(255,255,255,0.05) !important;' + bg + '">' +
+                        '<div class="d-flex align-items-center justify-content-between">' +
+                            '<strong class="text-white small" style="font-size:12px;">' + (item.title || '') + '</strong>' +
+                            '<span class="text-muted" style="font-size:10px;">' + (item.created_at ? item.created_at.substring(5,16) : '') + '</span>' +
+                        '</div>' +
+                        '<div class="text-muted small text-truncate" style="font-size:11px;">' + (item.body || '') + '</div>' +
+                    '</a>';
+                });
+                listContainer.innerHTML = html;
+            })
+            .catch(function(){
+                listContainer.innerHTML = '<div class="p-3 text-center text-danger small">Failed to load.</div>';
+            });
+    });
+
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var csrf = (window.pgs && window.pgs.csrfToken) || (document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '');
+            var body = new URLSearchParams({ op: 'ntf_mark_all_read' });
+            if (csrf) body.append('csrf_token', csrf);
+            fetch('admin/ajax/rqst.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            }).then(function(r){ return r.json(); })
+              .then(function(d){
+                  if (d.ok) {
+                      refreshUnread();
+                      bellLink.click();
+                  }
+              });
+        });
+    }
+});
+</script>

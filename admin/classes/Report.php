@@ -52,7 +52,7 @@ class Report
                   LEFT JOIN {$unidades} AS u_prop ON u_prop.id = f.tbl_requerimiento_id
                   LEFT JOIN {$unidades} AS u_user ON u_user.id = f.tbl_unidad_id";
 
-        $q = $select . " ORDER BY f.dtcreate DESC LIMIT 20";
+        $q = $select . " ORDER BY f.id DESC, f.dtcreate DESC LIMIT 20";
         if ($id > 0) {
             $q = $select . " WHERE f.id = " . $id;
         }
