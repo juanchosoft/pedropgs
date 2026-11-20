@@ -929,6 +929,12 @@
       || SessionData::hasPermission('configuracion.roles.view')
       || SessionData::hasPermission('configuracion.roles.manage')
       || $esSuperAdmin;
+   $canRequests = SessionData::hasPermission('solicitudes.requests.view')
+      || SessionData::hasPermission('solicitudes.requests.manage')
+      || $esSuperAdmin;
+   $canVoiceSettings = SessionData::hasPermission('solicitudes.responders.manage')
+      || SessionData::hasPermission('solicitudes.settings.manage')
+      || $esSuperAdmin;
    ?>
 
    <?php if ($canReports): ?>
@@ -1002,6 +1008,41 @@
             <?php endif; ?>
          </ul>
       </li>
+   <?php endif; ?>
+
+   <?php if ($canRequests || $canVoiceSettings): ?>
+      <?php require_once __DIR__ . '/../bootstrap_pgs.php'; ?>
+      <li>
+         <a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false">
+            <i class="fa fa-phone"></i>
+            <span class="nav-text">Service Requests <span class="badge badge-danger js-req-badge" style="display:none"></span></span>
+         </a>
+         <ul aria-expanded="false">
+            <?php if ($canRequests): ?>
+            <li><a href="./requests.php">Requests <span class="badge badge-danger js-req-badge" style="display:none"></span></a></li>
+            <?php endif; ?>
+            <?php if ($canVoiceSettings): ?>
+            <li><a href="./voice_settings.php">Voice Settings</a></li>
+            <?php endif; ?>
+         </ul>
+      </li>
+      <?php if ($canRequests): ?>
+      <script>
+      window.addEventListener('load', function () {
+        if (!window.jQuery) { return; }
+        var token = <?php echo json_encode(\Pgs\Core\Csrf::token()); ?>;
+        function refreshRequestBadge() {
+          jQuery.ajax({ url: 'admin/ajax/rqst.php', method: 'POST', dataType: 'json', data: { op: 'req_summary' }, headers: { 'X-CSRF-Token': token } })
+            .done(function (r) {
+              var n = r && r.output && r.output.valid ? parseInt(r.output.response.received, 10) || 0 : 0;
+              jQuery('.js-req-badge').text(n).toggle(n > 0);
+            });
+        }
+        refreshRequestBadge();
+        setInterval(refreshRequestBadge, 30000);
+      });
+      </script>
+      <?php endif; ?>
    <?php endif; ?>
 
    <?php if ($canConfig): ?>

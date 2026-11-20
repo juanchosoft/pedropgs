@@ -11,6 +11,8 @@ final class PagePermissions
     /** basename => view KEY or list of KEYs (OR) */
     private const PAGE_VIEW = [
         'roles_permisos.php' => ['configuracion.roles.view', 'configuracion.roles.manage'],
+        'requests.php' => ['solicitudes.requests.view', 'solicitudes.requests.manage'],
+        'voice_settings.php' => ['solicitudes.responders.manage', 'solicitudes.settings.manage'],
         'usuarios.php' => 'configuracion.usuarios.view',
         'empleados.php' => 'empleados.empleados.view',
         'clientes.php' => 'clientes.customers.view',

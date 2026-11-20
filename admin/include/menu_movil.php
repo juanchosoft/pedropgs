@@ -395,6 +395,12 @@
           || SessionData::hasPermission('configuracion.roles.view')
           || SessionData::hasPermission('configuracion.roles.manage')
           || $esSuperAdmin;
+        $canRequests = SessionData::hasPermission('solicitudes.requests.view')
+          || SessionData::hasPermission('solicitudes.requests.manage')
+          || $esSuperAdmin;
+        $canVoiceSettings = SessionData::hasPermission('solicitudes.responders.manage')
+          || SessionData::hasPermission('solicitudes.settings.manage')
+          || $esSuperAdmin;
       ?>
 
       <li class="menu-item">
@@ -451,6 +457,16 @@
           <div class="icon-box"><i class="fa fa-calendar"></i></div>
           <div class="menu-label-movil">Calendar</div>
           <small>Schedule</small>
+        </a>
+      </li>
+      <?php endif; ?>
+
+      <?php if ($canRequests || $canVoiceSettings): ?>
+      <li class="menu-item">
+        <a href="javascript:void(0)" onclick="abrirModal('REQUESTS')">
+          <div class="icon-box"><i class="fa fa-phone"></i></div>
+          <div class="menu-label-movil">Requests <span class="badge badge-danger js-req-badge" style="display:none"></span></div>
+          <small>Phone</small>
         </a>
       </li>
       <?php endif; ?>
@@ -555,6 +571,17 @@
             <li><a href="./check_report_list.php">Show Check List Report <span class="chev">›</span></a></li>
             <li><a href="./calendar.php">Calendar <span class="chev">›</span></a></li>
             <li><a href="./report-list-group.php">Report List Group Download <span class="chev">›</span></a></li>
+          <?php endif; ?>
+        </ul>
+      `;
+    } else if (titulo === "REQUESTS") {
+      document.getElementById("modalContent").innerHTML = `
+        <ul class="modal-list">
+          <?php if ($canRequests): ?>
+            <li><a href="./requests.php">Requests <span class="chev">›</span></a></li>
+          <?php endif; ?>
+          <?php if ($canVoiceSettings): ?>
+            <li><a href="./voice_settings.php">Voice Settings <span class="chev">›</span></a></li>
           <?php endif; ?>
         </ul>
       `;

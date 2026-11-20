@@ -108,6 +108,12 @@ final class PermissionCatalog
         // Dashboard (session pages that may gain KEY later)
         $add('dashboard.main.view', 'dashboard', 'view', 'Dashboard - View');
 
+        // Service requests
+        $add('solicitudes.requests.view', 'solicitudes', 'view', 'Requests - View');
+        $add('solicitudes.requests.manage', 'solicitudes', 'manage', 'Requests - Manage');
+        $add('solicitudes.responders.manage', 'solicitudes', 'responders_manage', 'Requests - Manage Responders');
+        $add('solicitudes.settings.manage', 'solicitudes', 'settings_manage', 'Requests - Manage Voice Settings');
+
         return $items;
     }
 

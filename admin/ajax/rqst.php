@@ -799,6 +799,35 @@ switch ($op) {
         echo json_encode(Role::getPermissionsCatalog($rqst));
         break;
 
+    case 'req_list':
+    case 'req_get':
+    case 'req_status':
+    case 'req_assign':
+    case 'req_note':
+    case 'req_review':
+    case 'req_property':
+    case 'req_summary':
+    case 'req_users':
+    case 'req_properties':
+    case 'vst_overview':
+    case 'vst_responders':
+    case 'vst_responder_save':
+    case 'vst_responder_delete':
+    case 'vst_phones':
+    case 'vst_phone_save':
+    case 'vst_phone_toggle':
+    case 'vst_phone_delete':
+    case 'vst_discards':
+    case 'vst_discard_assign':
+    case 'vst_discard_dismiss':
+    case 'vst_settings':
+    case 'vst_settings_save':
+    case 'vst_users':
+    case 'vst_properties':
+        require_once __DIR__ . '/../bootstrap_pgs.php';
+        echo \Pgs\Admin\AdminAjax::run($rqst, static fn (\Pgs\Admin\AdminContext $ctx, array $r) => \Pgs\Admin\AdminOps::handle($op, $ctx, $r));
+        break;
+
     default:
         echo 'OPERACION NO DISPONIBLE';
 
