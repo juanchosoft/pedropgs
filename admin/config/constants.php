@@ -5,5 +5,6 @@
 
 /** Destinatario de notificaciones de Clock In / Clock Out (administrador). */
 if (!defined('ATTENDANCE_ADMIN_EMAIL')) {
-    define('ATTENDANCE_ADMIN_EMAIL', 'jotsuar@yopmail.com');
+    define('ATTENDANCE_ADMIN_EMAIL', 'info@pgscentrum.com');
+    // define('ATTENDANCE_ADMIN_EMAIL', 'info@pgscentrum.com');
 }

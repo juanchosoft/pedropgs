@@ -904,6 +904,78 @@
     left: 208px !important;
   }
 }
+/* =========================================================
+   PGS — Mobile-first sidebar: accessible Logout at all times
+   The existing MetisMenu structure and permission checks remain intact.
+   JS moves .sidebar-footer outside the scroll area, inside .deznav.
+   ========================================================= */
+.deznav.pgs-sidebar-with-footer {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+.deznav.pgs-sidebar-with-footer > .deznav-scroll {
+  display: block;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px !important;
+}
+.deznav.pgs-sidebar-with-footer #menu {
+  padding-bottom: 12px !important;
+}
+.deznav.pgs-sidebar-with-footer > .sidebar-footer {
+  position: relative !important;
+  z-index: 2 !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  background: linear-gradient(0deg, #06080e 70%, #170b14 100%) !important;
+  border-top: 1px solid rgba(255,255,255,.13) !important;
+  box-shadow: 0 -7px 22px rgba(0,0,0,.16);
+}
+.deznav.pgs-sidebar-with-footer > .sidebar-footer a {
+  min-height: 46px;
+  border-radius: 13px !important;
+  font-size: 14px;
+  box-shadow: 0 8px 17px rgba(225,29,46,.15);
+}
+@media (max-width: 768px) {
+  .deznav.pgs-sidebar-with-footer > .deznav-scroll {
+    padding-top: 8px !important;
+  }
+  .deznav.pgs-sidebar-with-footer #menu {
+    padding: 8px 9px 12px !important;
+  }
+  .deznav.pgs-sidebar-with-footer #menu > li {
+    margin: 4px 0 !important;
+  }
+  .deznav.pgs-sidebar-with-footer #menu > li > a {
+    min-height: 48px !important;
+    padding: 6px 10px !important;
+    gap: 10px !important;
+  }
+  .deznav.pgs-sidebar-with-footer #menu > li > a > i {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    flex-basis: 36px !important;
+  }
+  .deznav.pgs-sidebar-with-footer #menu ul {
+    margin: 4px 0 !important;
+    padding: 5px 7px !important;
+  }
+  .deznav.pgs-sidebar-with-footer #menu ul li a {
+    min-height: 38px !important;
+    padding: 8px 9px !important;
+  }
+}
 </style>
 
 <ul class="metismenu" id="menu">
@@ -1075,6 +1147,26 @@
     <i class="fa fa-power-off"></i> Logout
   </a>
 </div>
+
+<script>
+/* Keep Logout visible while only the navigation items scroll. */
+(function () {
+  function positionLogout() {
+    var sidebar = document.querySelector('.deznav');
+    var scroll = sidebar && sidebar.querySelector('.deznav-scroll');
+    var footer = scroll && scroll.querySelector('.sidebar-footer');
+    if (!sidebar || !scroll) return;
+    if (footer && footer.parentNode !== sidebar) sidebar.appendChild(footer);
+    if (sidebar.querySelector(':scope > .sidebar-footer')) {
+      sidebar.classList.add('pgs-sidebar-with-footer');
+    }
+  }
+  positionLogout();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', positionLogout, { once: true });
+  }
+})();
+</script>
 
 <script>
 /* =========================================================

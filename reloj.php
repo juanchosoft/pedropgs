@@ -13,7 +13,7 @@ $edit   = SessionData::getPermission(35);
 $delete = SessionData::getPermission(36);
 $enable = SessionData::getPermission(37);
 
-if (!$view) { require 'permiso_denegado.php'; }
+if (!$view) { require 'permiso_denegado.php'; exit; }
 
 $modulo = 'Check-in - Check-out';
 $employeeCc = SessionData::getEmployeeCc();
@@ -21,8 +21,8 @@ $hasEmployee = $employeeCc > 0;
 
 include './admin/classes/EntradaSalida.php';
 $clockStatus = EntradaSalida::getTodayStatus();
-$btnLabel = $clockStatus['label'];
-$btnStatus = $clockStatus['status'];
+$btnLabel = (string)($clockStatus['label'] ?? 'Check-in');
+$btnStatus = (string)($clockStatus['status'] ?? 'checkin');
 $btnDisabled = !$hasEmployee;
 ?>
 <!DOCTYPE html>
@@ -33,7 +33,6 @@ $btnDisabled = !$hasEmployee;
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
   <link href="assets/css/reloj.css" rel="stylesheet" />
-  <link href="https://www.dafont.com/es/ds-digital.font" rel="stylesheet" type="text/css">
   <link href="https://fonts.googleapis.com/css2?family=Electrolize&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Oswald:400,300,700" rel="stylesheet" type="text/css">
 
@@ -343,12 +342,6 @@ $btnDisabled = !$hasEmployee;
       <div class="container-fluid">
         <div class="rt-ui">
 
-          <div class="page-titles">
-            <ol class="breadcrumb">
-              <li class="breadcrumb-item"><a href="javascript:void(0)">Home</a></li>
-              <li class="breadcrumb-item active"><a href="javascript:void(0)">Check-in - Check-out</a></li>
-            </ol>
-          </div>
 
           <div class="row">
             <div class="col-12">
@@ -363,8 +356,8 @@ $btnDisabled = !$hasEmployee;
                       <div class="rt-top">
                         <div>
                           <span class="rt-pill"><span class="dot"></span> Attendance</span>
-                          <h4 class="rt-title">Check-in - Check-out</h4>
-                          <div class="rt-sub">Register Check-in / Check-out as many times as needed. The next action depends on your last record today.</div>
+                          <h1 class="rt-title">Check-in / Check-out</h1>
+                          <div class="rt-sub">Register your attendance in one tap. Your next action follows your latest recorded movement.</div>
                         </div>
                       </div>
 

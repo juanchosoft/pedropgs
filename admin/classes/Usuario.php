@@ -274,6 +274,132 @@ class Usuario
         return $arrjson;
     }
 
+
+    /** Rehydrate current permissions, assigned units and role only AFTER WebAuthn signature verification. */
+    public static function loginVerifiedPasskey(int $verifiedUserId): array
+    {
+        if ($verifiedUserId < 1) {
+            return Util::error_wrong_data_login();
+        }
+        $db = new DbConection();
+        $pdo = $db->openConect();
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM " . $db->getTable('tec_usuarios') . " WHERE id = :id AND habilitado = 'yes' LIMIT 1");
+            $stmt->execute([':id' => $verifiedUserId]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$usuario) {
+                return Util::error_wrong_data_login();
+            }
+            $usuario['application'][] = Util::get_app_id();
+
+            $id = intval($usuario['id']);
+            $tbl_unidad_id = isset($usuario['tbl_unidad_id']) ? intval($usuario['tbl_unidad_id']) : 0;
+
+            $q1 = "SELECT tec_permiso_id 
+                   FROM " . $db->getTable('tec_usuarios_has_tec_permisos') . " 
+                   WHERE tec_usuarios_id = :id 
+                   ORDER BY tec_permiso_id ASC";
+
+            $stmtPermisos = $pdo->prepare($q1);
+            $stmtPermisos->execute([':id' => $id]);
+
+            $arrassigned = array();
+
+            foreach ($stmtPermisos->fetchAll(PDO::FETCH_ASSOC) as $permiso) {
+                $arrassigned[] = $permiso['tec_permiso_id'];
+            }
+
+            // RBAC: load permission KEYs from role (preferred). Fallback to legacy pivot IDs.
+            require_once __DIR__ . '/Authorization.php';
+            require_once __DIR__ . '/PermissionLegacyMap.php';
+            $auth = Authorization::loadUserAuth($pdo, $db, $id, isset($usuario['tipo']) ? (string) $usuario['tipo'] : '');
+            if (!empty($auth['permission_keys'])) {
+                $usuario['permission_keys'] = $auth['permission_keys'];
+                $usuario['permisos'] = !empty($auth['legacy_ids']) ? $auth['legacy_ids'] : $arrassigned;
+            } else {
+                $usuario['permission_keys'] = PermissionLegacyMap::legacyIdsToKeys($arrassigned);
+                $usuario['permisos'] = $arrassigned;
+            }
+            $usuario['role'] = $auth['role'];
+            $arrassigned = $usuario['permisos'];
+
+            /*
+             * Fetch all assigned unidades from the pivot table.
+             */
+            $qUnid = "SELECT tbl_unidades_id 
+                      FROM " . $db->getTable('tec_usuarios_has_tbl_unidades') . " 
+                      WHERE tec_usuarios_id = :id 
+                      ORDER BY tbl_unidades_id ASC";
+
+            $stmtUnid = $pdo->prepare($qUnid);
+            $stmtUnid->execute([':id' => $id]);
+
+            $unidadIds = array();
+            foreach ($stmtUnid->fetchAll(PDO::FETCH_ASSOC) as $rowUnid) {
+                $unidadIds[] = intval($rowUnid['tbl_unidades_id']);
+            }
+
+            // Backward compat: if no pivot entries, use tbl_unidad_id from the user record
+            if (empty($unidadIds) && $tbl_unidad_id > 0) {
+                $unidadIds[] = $tbl_unidad_id;
+            }
+
+            $usuario['unidades'] = $unidadIds;
+
+            $arr = array();
+            $arr[] = $usuario;
+
+            $q4 = "SELECT * 
+                   FROM " . $db->getTable('tec_config') . " 
+                   ORDER BY id 
+                   LIMIT 1";
+
+            $stmtConfig = $pdo->prepare($q4);
+            $stmtConfig->execute();
+
+            $arr4 = $stmtConfig->fetchAll(PDO::FETCH_ASSOC);
+
+            $telefono_emergencia = "";
+            $unidad = "";
+
+            if ($tbl_unidad_id > 0) {
+                $q5 = "SELECT * 
+                       FROM " . $db->getTable('tbl_unidades') . " 
+                       WHERE id = :tbl_unidad_id 
+                       LIMIT 1";
+
+                $stmtUnidad = $pdo->prepare($q5);
+                $stmtUnidad->execute([':tbl_unidad_id' => $tbl_unidad_id]);
+
+                $unidadData = $stmtUnidad->fetch(PDO::FETCH_ASSOC);
+
+                if ($unidadData) {
+                    $unidad = isset($unidadData['nombre']) ? $unidadData['nombre'] : "";
+                    $telefono_emergencia = isset($unidadData['telefono_emergencia']) ? $unidadData['telefono_emergencia'] : "";
+                }
+            }
+
+            $arrjson = array(
+                'output' => array(
+                    'valid' => true,
+                    'response' => $arr,
+                    'permisos' => $arrassigned,
+                    'config' => $arr4,
+                    'telefono_emergencia' => $telefono_emergencia,
+                    'unidad' => $unidad,
+                    'unidades' => $unidadIds
+                )
+            );
+
+            return $arrjson;
+        } catch (Throwable $e) {
+            error_log('Passkey session hydration failed: ' . $e->getMessage());
+            return Util::error_general('Unable to load account permissions.');
+        } finally {
+            $db->closeConect();
+        }
+    }
+
     public static function save($rqst)
     {
         $id = isset($rqst['id']) ? intval($rqst['id']) : 0;

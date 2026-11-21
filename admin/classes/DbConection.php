@@ -8,10 +8,10 @@ class DbConection
   public function __construct()
   {
     /** Local */
-    $this->host   = "localhost";
-    $this->user   = "root";
-    $this->pass   = "";
-    $this->dbName = "pgscentrum";
+      $this->host = "localhost";
+    $this->user = "root";
+    $this->pass = "";
+    $this->dbName = "pgs";
 
     // Timestamp (según tu lógica actual)
     $this->server_date = 'DATE_ADD(NOW(),INTERVAL 1 HOUR)';

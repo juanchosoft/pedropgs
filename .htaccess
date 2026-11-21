@@ -1,0 +1,13 @@
+<IfModule mod_authz_core.c>
+  <FilesMatch "\.(ini|env|lock|log|sql|md|dist|patch)$">
+    Require all denied
+  </FilesMatch>
+  <FilesMatch "^(composer\.json|composer\.lock|package\.json|phpunit\.xml|phpstan\.neon)$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+<IfModule mod_alias.c>
+  RedirectMatch 404 ^(?:/[^/]+)?/(docs|tests|storage|scratch|\.phpunit\.cache)(/|$)
+  RedirectMatch 404 ^(?:/[^/]+)?/vendor/.*\.(php|json|md)$
+  RedirectMatch 404 ^(?:/[^/]+)?/admin/(bootstrap_pgs\.php|classes/Pgs|cron|cli)(/|$)
+</IfModule>

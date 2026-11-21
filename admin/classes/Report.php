@@ -52,7 +52,7 @@ class Report
                   LEFT JOIN {$unidades} AS u_prop ON u_prop.id = f.tbl_requerimiento_id
                   LEFT JOIN {$unidades} AS u_user ON u_user.id = f.tbl_unidad_id";
 
-        $q = $select . " ORDER BY f.dtcreate DESC LIMIT 20";
+        $q = $select . " ORDER BY f.id DESC, f.dtcreate DESC LIMIT 20";
         if ($id > 0) {
             $q = $select . " WHERE f.id = " . $id;
         }
@@ -69,6 +69,84 @@ class Report
         }
         $db->closeConect();
         return $arrjson;
+    }
+
+    /**
+     * Búsqueda paginada en el servidor para dispositivos móviles.
+     * Se limitan resultados a las unidades de la sesión ANTES de paginar.
+     * No altera getAll() utilizado por los endpoints existentes.
+     */
+    public static function searchMobile(array $options = []): array
+    {
+        $page = max(1, min(100000, (int)($options['page'] ?? 1)));
+        $limit = max(1, min(24, (int)($options['limit'] ?? 12)));
+        $search = trim((string)($options['search'] ?? ''));
+        $search = function_exists('mb_substr') ? mb_substr($search, 0, 100, 'UTF-8') : substr($search, 0, 100);
+        $status = (string)($options['status'] ?? 'open');
+        $mine = !empty($options['mine']);
+        $userId = (int)($_SESSION['session_user']['id'] ?? 0);
+        if ($userId <= 0) return ['output' => ['valid' => false, 'response' => [], 'total' => 0, 'page' => $page]];
+        $type = SessionData::getUserType();
+        $isAdmin = $type == Util::SuperAdmin();
+        if (!$isAdmin && $type != Util::Manager() && $type != Util::Staff()) {
+            return ['output' => ['valid' => true, 'response' => [], 'total' => 0, 'page' => $page, 'pages' => 1]];
+        }
+        $db = new DbConection();
+        $pdo = $db->openConect();
+        try {
+            $photos = $db->getTable('tbl_fotos');
+            $units = $db->getTable('tbl_unidades');
+            $where = [];
+            $params = [];
+            if (!$isAdmin) {
+                $ids = array_values(array_unique(array_filter(array_map('intval', (array)SessionData::getUnidadesUser()), static function($id) {return $id > 0;})));
+                if (!$ids) return ['output' => ['valid' => true, 'response' => [], 'total' => 0, 'page' => 1, 'pages' => 1]];
+                $holders = [];
+                foreach ($ids as $i => $id) {
+                    $key = ':unit' . $i;
+                    $holders[] = $key;
+                    $params[$key] = $id;
+                }
+                $where[] = 'f.tbl_unidad_id IN (' . implode(',', $holders) . ')';
+            }
+            if ($mine) {
+                $where[] = 'f.tbl_usuario_id = :uid';
+                $params[':uid'] = $userId;
+            }
+            if ($status === 'finalizado') {
+                $where[] = 'f.estado = :status';
+                $params[':status'] = self::ESTADO_FINALIZADO;
+            } elseif ($status === 'open') {
+                $where[] = "(f.estado IS NULL OR f.estado = '' OR f.estado IN ('creado','pendiente'))";
+            }
+            if ($search !== '') {
+                $where[] = "(CAST(f.id AS CHAR) = :exactId OR f.actividades LIKE :term1 OR f.zone LIKE :term2 OR f.observaciones LIKE :term3 OR u_prop.nombre LIKE :term4 OR u_user.nombre LIKE :term5)";
+                $params[':exactId'] = ctype_digit($search) ? $search : '-1';
+                foreach (range(1, 5) as $i) $params[':term' . $i] = '%' . $search . '%';
+            }
+            $from = " FROM {$photos} f LEFT JOIN {$units} u_prop ON u_prop.id = f.tbl_requerimiento_id LEFT JOIN {$units} u_user ON u_user.id = f.tbl_unidad_id";
+            $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+            $countStmt = $pdo->prepare('SELECT COUNT(*)' . $from . $whereSql);
+            foreach ($params as $key => $value) $countStmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            $countStmt->execute();
+            $total = (int)$countStmt->fetchColumn();
+            $pages = max(1, (int)ceil($total / $limit));
+            $page = min($page, $pages);
+            $offset = ($page - 1) * $limit;
+            $sql = 'SELECT f.id, f.zone, f.actividades, f.observaciones, f.estado, f.dtcreate, f.foto_antes, f.foto_despues, f.tbl_unidad_id, f.tbl_usuario_id, COALESCE(u_prop.nombre, u_user.nombre) AS unidad_nombre'
+                . $from . $whereSql . ' ORDER BY f.id DESC LIMIT :limit OFFSET :offset';
+            $stmt = $pdo->prepare($sql);
+            foreach ($params as $key => $value) $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            return ['output' => ['valid' => true, 'response' => $stmt->fetchAll(PDO::FETCH_ASSOC), 'total' => $total, 'page' => $page, 'pages' => $pages]];
+        } catch (Throwable $e) {
+            error_log('Report::searchMobile: ' . $e->getMessage());
+            return ['output' => ['valid' => false, 'response' => [], 'total' => 0, 'page' => 1, 'pages' => 1]];
+        } finally {
+            $db->closeConect();
+        }
     }
 
     /**
@@ -162,7 +240,7 @@ class Report
         $pdo = $db->openConect();
 
         try {
-            $stmt = $pdo->prepare("SELECT id, estado FROM " . $db->getTable('tbl_fotos') . " WHERE id = :id");
+            $stmt = $pdo->prepare("SELECT id, estado, foto_despues FROM " . $db->getTable('tbl_fotos') . " WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) {
@@ -173,6 +251,10 @@ class Report
             }
             if (!self::isEditable($row['estado'] ?? null)) {
                 return Util::error_general('This report cannot be finalized.');
+            }
+            $after = trim((string)($row['foto_despues'] ?? ''));
+            if ($after === '' || in_array(strtolower(basename(str_replace('\\', '/', $after))), ['no_image.png', 'null', 'none'], true)) {
+                return Util::error_general('Upload the after photo before finalizing this report.');
             }
 
             $table = $db->getTable('tbl_fotos');

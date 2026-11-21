@@ -1,379 +1,116 @@
+<?php
+// Header PGS Centrum. Mantiene la estructura que utiliza el tema para el menú.
+$pgsHeaderTitle = isset($modulo) ? (string) $modulo : 'PGS Centrum';
+$pgsHeaderUnit = isset($_SESSION['session_user']['unidad']) ? (string) $_SESSION['session_user']['unidad'] : '';
+$pgsHeaderRole = (string) SessionData::getUserType();
+$pgsHeaderAvatar = (string) SessionData::getAvatar();
+$pgsEsc = static function ($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); };
+?>
 <style>
-    /* =========================
-   SAAS HEADER (RED / BLACK)
-   ========================= */
-:root{
-  --rb-bg: #0b0b0d;         /* negro base */
-  --rb-bg2:#0f1014;         /* negro suave */
-  --rb-line:#1d1f27;        /* borde sutil */
-  --rb-red:#e11d2e;         /* rojo principal */
-  --rb-red2:#ff2a3d;        /* rojo glow */
-  --rb-txt:#e9e9ee;         /* texto */
-  --rb-mut:#a9adb9;         /* texto muted */
-  --rb-glow: 0 10px 30px rgba(225,29,46,.18);
+/* PGS Header 2026: estilos aislados para no interferir con MetisMenu y la plantilla */
+:root { --pgsh-red:#e11d2e; --pgsh-dark:#17151b; }
+/* No usar position:relative sobre .nav-header: el tema lo posiciona independientemente. */
+.nav-header.nav-header--saas {
+  background:linear-gradient(150deg,#26121a 0%,#17171b 70%,#111318 100%) !important;
+  border-right:1px solid rgba(255,255,255,.08);
+  z-index:9100;
 }
-
-/* NAV HEADER (lado izquierdo) */
-.nav-header--saas{
-  background: linear-gradient(180deg, rgba(15,16,20,.92), rgba(11,11,13,.92));
-  border-right: 1px solid rgba(225,29,46,.15);
-  position: relative;
+.nav-header--saas .brand-logo--saas {
+  display:flex;align-items:center;justify-content:center;
+  padding:10px 12px;min-height:72px;text-decoration:none;
 }
-.nav-header--saas::after{
-  content:"";
-  position:absolute; inset:0;
-  background:
-    radial-gradient(600px 140px at 10% 0%, rgba(225,29,46,.18), transparent 55%),
-    radial-gradient(400px 140px at 85% 20%, rgba(255,42,61,.10), transparent 60%);
-  pointer-events:none;
+.brand-logo--saas .brand-word { display:flex;align-items:center;justify-content:center; }
+.brand-logo--saas .brand-title { display:block;max-width:188px;max-height:62px;width:auto;height:auto;object-fit:contain; }
+.brand-logo--saas .brand-mark {display:none;}
+.brand-logo--saas img {opacity:1;visibility:visible;}
+.header.header--saas {
+  background:linear-gradient(100deg,#242328,#15171c) !important;
+  border-bottom:1px solid rgba(225,29,46,.22);
+  color:#fff;
+  z-index:9000;
 }
-
-/* Brand */
-.brand-logo--saas{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding: 14px 14px;
+.header--saas .header-content--saas { padding:8px 16px !important; }
+.header--saas .navbar--saas { min-height:56px;padding:0; }
+.header--saas .navbar-collapse {align-items:center;gap:14px;min-width:0;}
+.header--saas .header-left--saas {flex:1 1 auto;min-width:0;}
+.header--saas .dashboard_bar--saas {
+  display:inline-flex;align-items:center;gap:10px;min-width:0;max-width:100%;
+  padding:10px 14px;border:1px solid rgba(225,29,46,.20);border-radius:12px;
+  background:rgba(0,0,0,.20);color:#fff !important;
+  font-size:clamp(14px,1.2vw,21px);font-weight:750;line-height:1.25;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.brand-logo--saas .brand-mark{
-  width:44px; height:44px;
-  display:grid; place-items:center;
-  border-radius: 14px;
-  background:  #fff !important;
-  border: 1px solid rgba(225,29,46,.25);
-  box-shadow: var(--rb-glow);
+.header--saas .modulo-dot {width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:#f02b43;box-shadow:0 0 0 4px rgba(240,43,67,.13);}
+.header--saas .header-right--saas {display:flex !important;align-items:center;justify-content:flex-end;gap:8px;margin:0;flex:0 0 auto;min-width:0;}
+.header--saas .header-right--saas > li {margin:0 !important;display:flex;align-items:center;}
+.header--saas .event-btn--saas {background:transparent !important;border:0 !important;padding:0 !important;box-shadow:none !important;text-decoration:none;}
+.header--saas .pgsh-chip {
+  display:flex;align-items:center;gap:8px;min-height:40px;
+  padding:8px 11px;border:1px solid rgba(255,255,255,.12);border-radius:100px;
+  background:rgba(0,0,0,.23);color:#f7f7fa;
 }
-.brand-logo--saas .logo-abbr{
-  max-width: 26px;
-  height:auto;
-  filter: drop-shadow(0 8px 16px rgba(225,29,46,.25));
+.header--saas .pgsh-chip-label {font-size:10px;font-weight:800;letter-spacing:.05em;color:#b9b9c3;}
+.header--saas .pgsh-chip-value {max-width:230px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:750;}
+.header--saas .event-btn--danger {
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:40px;padding:9px 12px !important;border-radius:100px !important;
+  border:1px solid rgba(255,80,99,.34) !important;
+  background:linear-gradient(125deg,#e11d2e,#b50d25) !important;
+  color:#fff !important;box-shadow:none !important;text-decoration:none;
+  font-size:12px;font-weight:800;white-space:nowrap;
 }
-.brand-logo--saas .brand-title{
-  max-height: 22px;
-  height:auto;
-  opacity: .95;
-  background:  color: #fff !important;
+.header--saas .pgsh-iconlink {display:grid !important;place-items:center;width:40px;height:40px;min-width:40px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.07);color:#fff !important;text-decoration:none;}
+.header--saas .pgsh-iconlink:hover {background:rgba(255,255,255,.15);}
+.header--saas .avatar-wrap {display:grid;place-items:center;width:34px;height:34px;border-radius:10px;overflow:hidden;}
+.header--saas .avatar-wrap img {width:30px !important;height:30px !important;object-fit:cover;border-radius:9px;}
+/* El control hamburguesa permanece en generic_header para que el tema lo reconozca. */
+.nav-control--saas .hamburger--saas .line {background:#fff !important;border-radius:4px;}
+@media(max-width:1199.98px){
+ .header--saas .pgsh-optional {display:none !important;}
+ .header--saas .header-content--saas {padding:7px 10px !important;}
 }
-
-/* Hamburger */
-.nav-control--saas .hamburger--saas .line{
-  height:2px;
-  border-radius: 12px;
-  background: linear-gradient(90deg, rgba(233,233,238,.95), rgba(225,29,46,.9));
-  box-shadow: 0 8px 18px rgba(225,29,46,.15);
-  color: #fff !important;
+@media(max-width:991.98px){
+ .brand-logo--saas .brand-word{display:none !important;}
+ .brand-logo--saas .brand-mark{display:grid !important;place-items:center;width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(225,29,46,.30);}
+ .brand-logo--saas .logo-abbr{display:block !important;max-width:28px;max-height:32px;width:auto;height:auto;object-fit:contain;}
+ .nav-header--saas .brand-logo--saas{padding:7px;min-height:64px;}
+ .header--saas .header-left--saas{display:none !important;}
+ .header--saas .navbar-collapse{justify-content:flex-end !important;}
+ .header--saas .event-btn--danger {width:40px;min-width:40px;padding:8px !important;}
+ .header--saas .pgsh-emergency-text{display:none !important;}
+ .header--saas .header-right--saas{gap:7px;}
 }
-.nav-control--saas .hamburger--saas:hover .line{
-  background: linear-gradient(90deg, rgba(255,255,255,1), rgba(255,42,61,1));
-}
-
-/* HEADER TOP (barra superior) */
-.header--saas{
-  background: rgba(11,11,13,.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(225,29,46,.18);
-}
-.header-content--saas{
-  padding: 10px 14px;
-}
-.navbar--saas{
-  min-height: 58px;
-}
-
-/* Title / Module */
-.dashboard_bar--saas{
-  display:flex;
-  align-items:center;
-  gap:10px;
- color: #fff !important;
-  font-weight: 700;
-  letter-spacing: .2px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(15,16,20,.62), rgba(11,11,13,.42));
-  border: 1px solid rgba(225,29,46,.16);
-  box-shadow: 0 14px 40px rgba(0,0,0,.25);
-}
-.dashboard_bar--saas .modulo-dot{
-  width:10px; height:10px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, var(--rb-red2), var(--rb-red));
-  box-shadow: 0 0 0 5px rgba(225,29,46,.12);
-  color: #fff !important;
-}
-
-/* Right side */
-.header-right--saas{
-  gap:10px;
-  align-items:center;
-}
-
-/* Buttons look premium */
-.event-btn--saas{
-  background: transparent !important;
-  border: 0 !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-}
-.chip{
-  display:inline-flex;
-  align-items:center;
-  gap:10px;
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(225,29,46,.18);
-  background: linear-gradient(180deg, rgba(15,16,20,.70), rgba(11,11,13,.55));
-  color: var(--rb-txt);
-  box-shadow: 0 14px 40px rgba(0,0,0,.22);
-}
-.chip-k{
-  font-size: 11px;
-  letter-spacing: .9px;
-  color: var(--rb-mut);
-  text-transform: uppercase;
-}
-.chip-v{
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--rb-txt);
-  max-width: 220px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Emergency button */
-.event-btn--danger{
-  padding: 10px 14px !important;
-  border-radius: 999px !important;
-  border: 1px solid rgba(255,42,61,.35) !important;
-  background: linear-gradient(180deg, rgba(225,29,46,.95), rgba(160,10,22,.95)) !important;
-  color: #fff !important;
-  box-shadow: 0 18px 50px rgba(225,29,46,.25);
-}
-.event-btn--danger i{ opacity:.95; }
-.event-btn--danger:hover{
-  transform: translateY(-1px);
-  filter: brightness(1.05);
-}
-
-/* Avatar */
-.header-profile--saas .avatar-wrap{
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
-  display:grid;
-  place-items:center;
-  background: linear-gradient(180deg, rgba(15,16,20,.70), rgba(11,11,13,.55));
-  border: 1px solid rgba(225,29,46,.20);
-  box-shadow: 0 14px 40px rgba(0,0,0,.18);
-  overflow:hidden;
-}
-.header-profile--saas img{
-  width: 28px !important;
-  height: 28px !important;
-  border-radius: 10px;
-  object-fit: cover;
-}
-
-/* Logout */
-.logout--saas{
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
-  display:grid !important;
-  place-items:center;
-  background: linear-gradient(180deg, rgba(15,16,20,.70), rgba(11,11,13,.55));
-  border: 1px solid rgba(225,29,46,.20);
-  color: var(--rb-txt) !important;
-  transition: .2s ease;
-}
-.logout--saas:hover{
-  border-color: rgba(255,42,61,.45);
-  box-shadow: var(--rb-glow);
-  transform: translateY(-1px);
-}
-
-/* Responsive: compact */
-@media (max-width: 991.98px){
-  .header-content--saas{ padding: 8px 10px; }
-  .dashboard_bar--saas{ padding: 9px 12px; }
-  .chip{ padding: 9px 10px; }
-  .chip-v{ max-width: 140px; }
-}
-@media (max-width: 575.98px){
-  .dashboard_bar--saas{
-    max-width: 60vw;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-</style>
-<style>
-    /* =========================
-   FIX LOGOS (PC vs MOBILE)
-   ========================= */
-
-/* Default (PC): solo logo grande */
-.brand-logo--saas .logo-abbr{ 
-  display:none !important; 
-}
-.brand-logo--saas .brand-title{ 
-  display:block !important; 
-}
-
-/* Mobile/Tablet: solo logo pequeño */
-@media (max-width: 991.98px){
-  .brand-logo--saas .brand-title{ 
-    display:none !important; 
-  }
-  .brand-logo--saas .logo-abbr{ 
-    display:block !important; 
-  }
-
-  /* Ajuste visual para que no quede enorme el cuadro */
-  .brand-logo--saas .brand-mark{
-    width:40px; height:40px;
-  }
-  .brand-logo--saas .logo-abbr{
-    max-width:24px;
-  }
-}
-/* =========================================
-   FIX DEFINITIVO LOGOS (PC vs MOBILE)
-   - PC: solo logo grande (brand-title)
-   - Mobile: solo logo pequeño (logo-abbr)
-   ========================================= */
-
-/* Reset de imgs para que SIEMPRE se vean */
-.brand-logo--saas img{
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  filter: none !important;
-}
-
-/* PC (default): ocultar el cuadrito del abbr y mostrar solo el logo grande */
-.brand-logo--saas .brand-mark{
-  display: none !important;
-}
-.brand-logo--saas .brand-word{
-  display: flex !important;
-  align-items: center;
-}
-.brand-logo--saas .brand-title{
-  max-height: 60px;
-  height: auto;
-  width: auto;
-  opacity: 1 !important;
-  /* si tu logo es oscuro y se pierde en fondo negro, activa ESTA línea: */
-  /* filter: drop-shadow(0 10px 18px rgba(225,29,46,.20)) brightness(1.15) !important; */
-}
-
-/* Mobile/Tablet: mostrar solo logo pequeño */
-@media (max-width: 991.98px){
-  .brand-logo--saas .brand-word{
-    display: none !important;
-  }
-  .brand-logo--saas .brand-mark{
-    display: grid !important;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-
-    /* Evitar el “cuadro blanco” */
-    background: rgba(255,255,255,.06) !important;
-    border: 1px solid rgba(225,29,46,.28) !important;
-    box-shadow: 0 12px 30px rgba(0,0,0,.25);
-  }
-
-  .brand-logo--saas .logo-abbr{
-    max-width: 26px !important;
-    height: auto !important;
-    opacity: 1 !important;
-
-    /* si tu logo pequeño es oscuro y se pierde, activa ESTA línea: */
-    /* filter: drop-shadow(0 10px 16px rgba(225,29,46,.20)) brightness(1.2) !important; */
-  }
+@media(max-width:575.98px){
+ .header--saas .pgsh-avatar-item {display:none !important;}
+ .header--saas .header-content--saas {padding:7px 10px !important;}
+ .header--saas .navbar--saas {min-height:48px;}
+ .header--saas .pgsh-iconlink,.header--saas .event-btn--danger{width:40px;height:40px;min-height:40px;}
 }
 </style>
 <div class="nav-header nav-header--saas">
-    <a href="#" class="brand-logo brand-logo--saas">
-        <span class="brand-mark">
-            <img src="assets/img/logo1.png" class="logo-abbr" alt="">
-        </span>
-        <span class="brand-word">
-            <img src="assets/img/logo1a.png" class="brand-title" alt="">
-        </span>
-    </a>
-
-    <div class="nav-control nav-control--saas">
-        <div class="hamburger hamburger--saas">
-            <span class="line"></span><span class="line"></span><span class="line"></span>
-        </div>
-    </div>
+  <a href="main.php" class="brand-logo brand-logo--saas" title="PGS Centrum - Home" aria-label="PGS Centrum home">
+    <span class="brand-mark"><img src="assets/img/logo1.png" class="logo-abbr" alt="PGS Centrum"></span>
+    <span class="brand-word"><img src="assets/img/logo1a.png" class="brand-title" alt="PGS Centrum"></span>
+  </a>
+  <div class="nav-control nav-control--saas" aria-label="Toggle navigation menu">
+    <div class="hamburger hamburger--saas"><span class="line"></span><span class="line"></span><span class="line"></span></div>
+  </div>
 </div>
-
 <div class="header header--saas">
-    <div class="header-content header-content--saas">
-        <nav class="navbar navbar-expand navbar--saas">
-            <div class="collapse navbar-collapse justify-content-between">
-
-                <div class="header-left header-left--saas">
-                    <div class="dashboard_bar dashboard_bar--saas">
-                        <span class="modulo-dot"></span>
-                        <?php echo $modulo; ?>
-                    </div>
-                </div>
-
-                <ul class="navbar-nav header-right header-right--saas">
-
-                    <li class="dropdown schedule-event-inner">
-                        <a href="#" class="btn btn-primary btn-rounded event-btn event-btn--saas">
-                            <span class="chip chip--dark">
-                                <span class="chip-k">HOA</span>
-                                <span class="chip-v d-none d-lg-inline-block"><?php ECHO  $_SESSION['session_user']['unidad']; ?></span>
-                            </span>
-                        </a>
-                    </li>
-
-                    <li class="dropdown schedule-event-inner">
-                        <a href="#" class="btn btn-primary btn-rounded event-btn event-btn--saas">
-                            <span class="chip chip--dark">
-                                <span class="chip-k">ROLE</span>
-                                <span class="chip-v d-none d-lg-inline-block"><?php echo SessionData::getUserType(); ?></span>
-                            </span>
-                        </a>
-                    </li>
-
-                    <li class="dropdown schedule-event-inner">
-                        <a href="tel:" class="btn btn-warning btn-rounded event-btn event-btn--saas event-btn--danger" target="_blank">
-                            <i class="fa fa-phone"></i>
-                            <span class="d-none d-xl-inline-block">EMERGENCY</span>
-                            <span class="d-none d-lg-inline-block">CALL</span>
-                            <i class="fa fa-caret-right scale3 ml-2 d-none d-sm-inline-block"></i>
-                        </a>
-                    </li>
-
-                    <li class="nav-item dropdown header-profile header-profile--saas">
-                        <a class="nav-link nav-link--saas" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="avatar-wrap">
-                                <img src="<?php echo SessionData::getAvatar(); ?>" width="20" alt="" />
-                            </span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item notification_dropdown">
-                        <a class="nav-link bell bell-link primary nav-link--saas logout--saas" href="logout.php" title="Logout">
-                            <i class="fa fa-power-off"></i>
-                        </a>
-                    </li>
-
-                </ul>
-            </div>
-        </nav>
-    </div>
+  <div class="header-content header-content--saas">
+    <nav class="navbar navbar-expand navbar--saas" aria-label="Top navigation">
+      <div class="collapse navbar-collapse justify-content-between">
+        <div class="header-left header-left--saas">
+          <div class="dashboard_bar dashboard_bar--saas" title="<?php echo $pgsEsc($pgsHeaderTitle); ?>"><span class="modulo-dot" aria-hidden="true"></span><?php echo $pgsEsc($pgsHeaderTitle); ?></div>
+        </div>
+        <ul class="navbar-nav header-right header-right--saas">
+          <li class="pgsh-optional"><div class="pgsh-chip" title="HOA: <?php echo $pgsEsc($pgsHeaderUnit); ?>"><span class="pgsh-chip-label">HOA</span><span class="pgsh-chip-value"><?php echo $pgsEsc($pgsHeaderUnit); ?></span></div></li>
+          <li class="pgsh-optional"><div class="pgsh-chip" title="Role: <?php echo $pgsEsc($pgsHeaderRole); ?>"><span class="pgsh-chip-label">ROLE</span><span class="pgsh-chip-value"><?php echo $pgsEsc($pgsHeaderRole); ?></span></div></li>
+          <li><a href="tel:" class="event-btn--danger" aria-label="Emergency call" title="Emergency call"><i class="fa fa-phone" aria-hidden="true"></i><span class="pgsh-emergency-text">EMERGENCY CALL</span></a></li>
+          <li class="pgsh-avatar-item"><span class="pgsh-iconlink" title="Account avatar"><span class="avatar-wrap"><img src="<?php echo $pgsEsc($pgsHeaderAvatar); ?>" alt="User"></span></span></li>
+          <li><a class="pgsh-iconlink" href="logout.php" aria-label="Logout" title="Logout"><i class="fa fa-power-off" aria-hidden="true"></i></a></li>
+        </ul>
+      </div>
+    </nav>
+  </div>
 </div>

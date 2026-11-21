@@ -1,6 +1,18 @@
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+  session_start();
+}
 $mensaje = '';
+$pgsAjaxLogin = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_SERVER['HTTP_X_PGS_LOGIN'] ?? '') === '1';
+function pgsLoginJson($ok, $message = '', $redirect = '') {
+  header('Content-Type: application/json; charset=utf-8');
+  header('X-Content-Type-Options: nosniff');
+  header('Cache-Control: no-store');
+  echo json_encode(['success' => (bool)$ok, 'message' => (string)$message, 'redirect' => (string)$redirect], JSON_UNESCAPED_SLASHES);
+  exit;
+}
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 
 include './admin/classes/SessionData.php';
 include './admin/classes/DbConection.php';
@@ -8,16 +20,20 @@ include './admin/classes/Util.php';
 include './admin/classes/Usuario.php';
 
 if (isset($_SESSION['session_user'])) {
-  ?>
-  <script>
-    window.location = 'main.php';
-  </script>
-  <?php
+  // Authenticated users may return after a mobile navigation interruption.
+  $next = !empty($_SESSION['pgs_passkey_offer']) ? 'passkeys_setup.php' : 'main.php';
+  session_write_close();
+  header('Location: ' . $next, true, 303);
   exit;
 } else {
-  $rqst = $_REQUEST;
+  $rqst = $_POST;
   $op = isset($rqst['op']) ? $rqst['op'] : '';
-  if ($op == 'pms_usrlogin') {
+  if ($_SERVER['REQUEST_METHOD'] === 'POST' && hash_equals('pms_usrlogin', (string)$op)) {
+    if (!isset($_POST['login_csrf'], $_SESSION['login_csrf']) || !hash_equals((string)$_SESSION['login_csrf'], (string)$_POST['login_csrf'])) {
+      http_response_code(403);
+      $mensaje = 'Your session expired. Refresh the page and try again.';
+      if ($pgsAjaxLogin) pgsLoginJson(false, $mensaje);
+    } else {
     $nickname = isset($rqst['nickname']) ? $rqst['nickname'] : '';
     $hashpass = isset($rqst['hashpass']) ? $rqst['hashpass'] : '';
 
@@ -27,6 +43,7 @@ if (isset($_SESSION['session_user'])) {
       $res = Usuario::login($arr);
       $isvalid = $res['output']['valid'];
       if ($isvalid) {
+        session_regenerate_id(true);
         $_SESSION['session_user'] = $res['output']['response'][0];
         $_SESSION['session_user']['permisos'] = $res['output']['permisos'];
         $_SESSION['session_user']['permission_keys'] = isset($res['output']['response'][0]['permission_keys'])
@@ -39,19 +56,25 @@ if (isset($_SESSION['session_user'])) {
         $_SESSION['session_user']['telefono_emergencia'] = $res['output']['telefono_emergencia'];
         $_SESSION['session_user']['unidad'] = $res['output']['unidad'];
         $_SESSION['session_user']['unidades'] = isset($res['output']['unidades']) ? $res['output']['unidades'] : [];
-        ?>
-        <script>
-          window.location = 'main.php';
-        </script>
-        <?php
+        // Flush the authenticated session before navigating: prevents mobile requests waiting on the PHP session lock.
+        $_SESSION['pgs_passkey_offer'] = true;
+        session_write_close();
+        if ($pgsAjaxLogin) pgsLoginJson(true, '', 'passkeys_setup.php');
+        header('Location: passkeys_setup.php', true, 303);
         exit;
       } else {
-        $mensaje = $res['output']['response']['content'];
+        $mensaje = (string)($res['output']['response']['content'] ?? 'Incorrect username or password.');
+        if ($pgsAjaxLogin) pgsLoginJson(false, $mensaje);
       }
     } else {
-      $mensaje = 'All fields are required.';
+      $mensaje = 'Username and password are required.';
+      if ($pgsAjaxLogin) pgsLoginJson(false, $mensaje);
+    }
     }
   }
+}
+if (empty($_SESSION['login_csrf'])) {
+  $_SESSION['login_csrf'] = bin2hex(random_bytes(32));
 }
 ?>
 <!DOCTYPE html>
@@ -409,6 +432,27 @@ if (isset($_SESSION['session_user'])) {
     }
     .mini-footer a:hover{ color: rgba(255,255,255,.95); border-bottom-color: rgba(255,255,255,.55); }
 
+    .secure-hint { margin-top:15px; padding:11px 12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.045); border-radius:12px; color:var(--muted); font-size:12px; line-height:1.55; }
+    .secure-hint strong { display:block; font-weight:600; color:rgba(255,255,255,.8); }
+    .secure-hint-icon { margin-right:4px; }
+    .saas-input { font-size:16px; min-height:48px; }
+    .btn-saas { min-height:49px; touch-action: manipulation; }
+    .icon-btn { min-width:42px; min-height:42px; right:5px; }
+    html { -webkit-text-size-adjust:100%; }
+    @media (max-width:575.98px) {
+      body { min-height:100dvh; }
+      .authincation { min-height:100dvh; align-items:center; }
+      .saas-wrap { padding:14px 0 calc(14px + env(safe-area-inset-bottom)); }
+      .saas-card { border-radius:19px; }
+      .saas-form { padding:25px 20px 22px; }
+      .logo-wrap img { width:155px; }
+      .headline { font-size:21px; }
+      .subline { margin-bottom:21px; }
+      .row-actions { align-items:flex-start; }
+      .remember { min-height:35px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation:none; } * { transition:none !important; } }
+
     /* make template default card not fight */
     .authincation-content{
       background: transparent !important;
@@ -492,8 +536,9 @@ if (isset($_SESSION['session_user'])) {
                 <div class="headline">Welcome back</div>
                 <div class="subline">Enter your credentials to continue</div>
 
-                <form id="loginForm" class="form" method="POST" action="login.php" autocomplete="off">
+                <form id="loginForm" class="form" method="POST" action="login.php" autocomplete="on">
                   <input type="hidden" id="op" name="op" value="pms_usrlogin">
+                  <input type="hidden" name="login_csrf" value="<?php echo htmlspecialchars($_SESSION['login_csrf'], ENT_QUOTES, 'UTF-8'); ?>">
 
                   <div class="form-group mb-3">
                     <label class="form-label" for="nickname">User</label>
@@ -505,7 +550,7 @@ if (isset($_SESSION['session_user'])) {
                         class="saas-input"
                         placeholder="Type your username"
                         required
-                        autocomplete="username"
+                        autocomplete="username webauthn" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="next"
                         value="<?php echo isset($_POST['nickname']) ? htmlspecialchars((string)$_POST['nickname']) : ''; ?>"
                       />
                     </div>
@@ -521,7 +566,7 @@ if (isset($_SESSION['session_user'])) {
                         class="saas-input"
                         placeholder="Type your password"
                         required
-                        autocomplete="current-password"
+                        autocomplete="current-password" enterkeyhint="go"
                       />
                       <button type="button" class="icon-btn" id="togglePass" aria-label="Show/Hide password" title="Show/Hide">
                         <!-- simple eye icon (inline svg) -->
@@ -535,12 +580,12 @@ if (isset($_SESSION['session_user'])) {
 
                   <div class="row-actions">
                     <label class="remember" for="basic_checkbox_1">
-                      <input type="checkbox" id="basic_checkbox_1">
-                      Remember me
+                      <input type="checkbox" id="basic_checkbox_1" name="remember_username" checked>
+                      Remember my username
                     </label>
 
                     <div style="color:rgba(255,255,255,.55);font-size:12px;">
-                      Tip: Press <b>Enter</b> to login
+                      Use saved passwords for quicker sign-in
                     </div>
                   </div>
 
@@ -549,14 +594,24 @@ if (isset($_SESSION['session_user'])) {
                     <span class="btn-loading"><span class="spinner"></span> Signing in...</span>
                   </button>
 
+                  <button id="pgsPasskeyLogin" type="button" class="btn-saas" style="margin-top:11px;background:#203858;border:1px solid rgba(255,255,255,.20)">🔐 Sign in with fingerprint / Face ID</button>
+                  <p id="pgsPasskeyError" role="alert" style="color:#ffbdc8;font-size:13px;margin-top:9px" hidden></p>
+                  <div id="pgsLoginStatus" role="status" aria-live="polite" class="alert-saas" hidden></div>
+
                   <?php if (!empty($mensaje)) { ?>
                     <div class="alert-saas" role="alert">
                       <b>Login error:</b> <?php echo htmlspecialchars((string)$mensaje); ?>
                     </div>
                   <?php } ?>
 
+                  <div class="secure-hint" aria-live="polite">
+                    <span class="secure-hint-icon" aria-hidden="true">&#128274;</span>
+                    Your phone can unlock saved credentials with fingerprint, face recognition or PIN when supported.
+                    <strong>To enable biometric sign-in, first log in with your password and register a Passkey.</strong>
+                  </div>
+
                   <div class="mini-footer">
-                    Having issues? Contact <a href="#" onclick="return false;">System Support</a>
+                    Need help? Contact your system administrator.
                   </div>
                 </form>
               </div>
@@ -570,33 +625,128 @@ if (isset($_SESSION['session_user'])) {
   </div>
 
   <!-- Script -->
-  <?php include './admin/include/gerenic_script.php'; ?>
+  <!-- Login uses native JavaScript; omit heavy dashboard scripts on this screen. -->
   <!-- Script -->
 
   <script>
-    (function(){
+    (function () {
+      'use strict';
       const form = document.getElementById('loginForm');
-      const btn  = document.getElementById('btnLogin');
+      const btn = document.getElementById('btnLogin');
       const btnText = btn.querySelector('.btn-text');
       const btnLoading = btn.querySelector('.btn-loading');
-
+      const nickname = document.getElementById('nickname');
       const pass = document.getElementById('hashpass');
+      const remember = document.getElementById('basic_checkbox_1');
       const toggle = document.getElementById('togglePass');
+      const storeKey = 'pgscentrum.remembered_username.v1';
+      const rememberKey = 'pgscentrum.remember_username_enabled.v1';
 
-      // Show/Hide password
-      toggle.addEventListener('click', function(){
-        const isPass = pass.type === 'password';
-        pass.type = isPass ? 'text' : 'password';
+      try {
+        const setting = localStorage.getItem(rememberKey);
+        remember.checked = setting !== 'false';
+        if (remember.checked && !nickname.value) {
+          nickname.value = localStorage.getItem(storeKey) || '';
+        }
+      } catch (_) { /* Private mode or blocked storage: browser autofill still works. */ }
+
+      toggle.addEventListener('click', function () {
+        const reveal = pass.type === 'password';
+        pass.type = reveal ? 'text' : 'password';
+        toggle.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password');
       });
 
-      // Button loading state
-      form.addEventListener('submit', function(){
-        // minimal front validation (HTML required already)
-        btn.setAttribute('disabled', 'disabled');
+      remember.addEventListener('change', function () {
+        try {
+          localStorage.setItem(rememberKey, remember.checked ? 'true' : 'false');
+          if (!remember.checked) localStorage.removeItem(storeKey);
+        } catch (_) {}
+      });
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        if (btn.disabled) return;
+        try {
+          if (remember.checked) {
+            localStorage.setItem(storeKey, nickname.value.trim());
+            localStorage.setItem(rememberKey, 'true');
+          } else {
+            localStorage.removeItem(storeKey);
+            localStorage.setItem(rememberKey, 'false');
+          }
+        } catch (_) {}
+        const status = document.getElementById('pgsLoginStatus');
+        const showStatus = (message) => {
+          if (status) {status.hidden = false; status.textContent = message;}
+        };
+        if (status) status.hidden = true;
+        btn.disabled = true;
         btnText.style.display = 'none';
         btnLoading.style.display = 'inline-flex';
+        let moving = false;
+        const go = (path) => {
+          moving = true;
+          window.location.assign(path === 'passkeys_setup.php' ? 'passkeys_setup.php' : 'main.php');
+        };
+        // One AJAX request avoids mobile WebView getting stuck on the previous
+        // page during a native form POST + HTTP 303 redirect.
+        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timeout = ctrl ? setTimeout(() => ctrl.abort(), 16000) : null;
+        try {
+          const response = await fetch('login.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {'X-PGS-Login':'1', 'Accept':'application/json'},
+            body: new FormData(form),
+            ...(ctrl ? {signal: ctrl.signal} : {})
+          });
+          const result = await response.json();
+          if (result.success === true) {
+            pass.value = '';
+            showStatus('Sign-in successful. Opening your account...');
+            go(result.redirect);
+            return;
+          }
+          showStatus(result.message || 'Unable to sign in. Check your credentials.');
+        } catch (_) {
+          // A network interruption can happen AFTER PHP committed a valid session.
+          // Check server-side session once before telling the user to retry.
+          try {
+            const response = await fetch('auth_status.php', {
+              credentials: 'same-origin', cache: 'no-store',
+              headers:{'Accept':'application/json'}
+            });
+            const result = await response.json();
+            if (result.authenticated === true) {
+              pass.value = '';
+              showStatus('Sign-in successful. Opening your account...');
+              go(result.redirect);
+              return;
+            }
+          } catch (_) {}
+          showStatus('Could not confirm your sign-in. Check your connection and try again.');
+        } finally {
+          if (timeout) clearTimeout(timeout);
+          if (!moving) {
+            btn.disabled = false;
+            btnText.style.display = '';
+            btnLoading.style.display = 'none';
+          }
+        }
+      });
+
+      // On browser history restore, re-enable the button.
+      window.addEventListener('pageshow', function () {
+        btn.disabled = false;
+        btnText.style.display = '';
+        btnLoading.style.display = 'none';
+        const status = document.getElementById('pgsLoginStatus');
+        if (status) status.hidden = true;
       });
     })();
   </script>
+  <script src="assets/js/pgs-passkeys.js?v=2" defer></script>
 </body>
 </html>

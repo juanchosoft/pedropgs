@@ -11,35 +11,30 @@ $edit   = SessionData::getPermission(9);
 $delete = SessionData::getPermission(10);
 
 // Validation
-if (!$view) { require 'permiso_denegado.php'; }
+if (!$view) { http_response_code(403); require 'permiso_denegado.php'; exit; }
 $modulo = 'Activities report';
 
-$arr = Zona::getAll(null);
-$arr = $arr['output']['response'];
-$option = '<option value="seleccione">Seleccione...</option>';
-foreach ($arr as $val) {
-  $option .= "<option value='" . $val['id'] . "'>" . $val['zona'] . "</option>";
-}
+// Zona::getAll() eliminada: en esta pantalla no se usa $option.
 
 // Units options
 $arrRequerimiento = Unidades::getAll(null);
-$isvalidUni = $arrRequerimiento['output']['valid'];
-$arrRequerimiento = $arrRequerimiento['output']['response'];
+$isvalidUni = !empty($arrRequerimiento['output']['valid']);
+$arrRequerimiento = is_array($arrRequerimiento['output']['response'] ?? null) ? $arrRequerimiento['output']['response'] : [];
 
-$optionRequerimiento = '<option value="selecct">Select...</option>';
+$optionRequerimiento = '<option value="">Select a property</option>'; 
 
-$userUnidad   = SessionData::getUnidadUser();
 $userUnidades = SessionData::getUnidadesUser();
+$userUnidades = is_array($userUnidades) ? array_map('intval', $userUnidades) : [];
 $userType     = SessionData::getUserType();
 
 if ($isvalidUni) {
   foreach ($arrRequerimiento as $val) {
     if ($userType == Util::SuperAdmin()) {
-      $optionRequerimiento .= "<option value='" . htmlspecialchars($val['id']) . "'>" . htmlspecialchars($val['nombre']) . "</option>";
+      $optionRequerimiento .= "<option value='" . (int)$val['id'] . "'>" . htmlspecialchars((string)($val['nombre'] ?? ''), ENT_QUOTES, 'UTF-8') . "</option>";
       continue;
     }
-    if (($userType == Util::Manager() || $userType == Util::Staff()) && in_array($val['id'], $userUnidades)) {
-      $optionRequerimiento .= "<option value='" . htmlspecialchars($val['id']) . "'>" . htmlspecialchars($val['nombre']) . "</option>";
+    if (($userType == Util::Manager() || $userType == Util::Staff()) && in_array((int)$val['id'], $userUnidades, true)) {
+      $optionRequerimiento .= "<option value='" . (int)$val['id'] . "'>" . htmlspecialchars((string)($val['nombre'] ?? ''), ENT_QUOTES, 'UTF-8') . "</option>";
     }
   }
 }
@@ -50,252 +45,66 @@ if ($isvalidUni) {
 <head>
   <?php include './admin/include/generic_head.php'; ?>
 
-  <!-- ✅ Premium SaaS UI (RED + BLACK) | Only design -->
+  <!-- Mobile-first PGS report UI -->
   <style>
-    :root{
-      --pgs-red:#E11D2E;
-      --pgs-red-2:#B3121E;
-      --pgs-black:#0B0F14;
-      --pgs-ink:#0f172a;
-      --pgs-muted:#6b7280;
-      --pgs-border:rgba(2,6,23,.10);
-      --pgs-card:rgba(255,255,255,.92);
-      --pgs-shadow:0 18px 45px rgba(2,6,23,.14);
-      --pgs-shadow-soft:0 12px 28px rgba(2,6,23,.10);
-      --pgs-radius:18px;
-      --pgs-radius-lg:22px;
-    }
-
-    .content-body .container-fluid{ padding-top: 14px; }
-    @media (min-width: 992px){ .content-body .container-fluid{ padding-top: 18px; } }
-
-    /* Page hero */
-    .pgs-hero{
-      position: relative;
-      border-radius: calc(var(--pgs-radius) + 6px);
-      padding: 18px 18px;
-      overflow: hidden;
-      border: 1px solid var(--pgs-border);
-      background:
-        radial-gradient(1200px 420px at 10% 0%, rgba(225,29,46,.18), transparent 60%),
-        radial-gradient(900px 380px at 90% 10%, rgba(11,15,20,.16), transparent 55%),
-        linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.82));
-      box-shadow: var(--pgs-shadow-soft);
-      margin-bottom: 16px;
-    }
-    .pgs-hero:before{
-      content:"";
-      position:absolute;
-      inset:-2px;
-      background:
-        radial-gradient(420px 260px at 10% 20%, rgba(225,29,46,.18), transparent 70%),
-        radial-gradient(360px 260px at 90% 0%, rgba(11,15,20,.12), transparent 70%);
-      pointer-events:none;
-    }
-    .pgs-hero-inner{ position:relative; display:flex; flex-direction: column; gap: 10px; }
-    .pgs-hero-title{
-      font-weight: 1000;
-      letter-spacing: -.02em;
-      color: var(--pgs-black);
-      margin:0;
-      line-height: 1.1;
-      font-size: 1.15rem;
-    }
-    .pgs-hero-sub{ margin:0; color: var(--pgs-muted); font-size: .92rem; font-weight: 600; }
-
-    .pgs-chiprow{ display:flex; flex-wrap: wrap; gap: 8px; align-items:center; }
-    .pgs-chip{
-      display:inline-flex; align-items:center; gap: 8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(11,15,20,.10);
-      background: rgba(255,255,255,.88);
-      color: rgba(11,15,20,.86);
-      font-weight: 900;
-      font-size: .82rem;
-      backdrop-filter: blur(10px);
-    }
-    .pgs-chip i{ color: var(--pgs-red); }
-
-    /* Cards */
-    .pgs-card.card{
-      border: 1px solid var(--pgs-border) !important;
-      border-radius: var(--pgs-radius-lg) !important;
-      background: var(--pgs-card) !important;
-      box-shadow: var(--pgs-shadow-soft);
-      overflow: hidden;
-    }
-    .pgs-card .card-body{ padding: 16px !important; }
-    @media (min-width: 992px){
-      .pgs-card .card-body{ padding: 18px !important; }
-    }
-
-    /* Section headings */
-    .pgs-section-title{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .pgs-section-title h5{
-      margin:0;
-      font-weight: 1000;
-      letter-spacing: -.01em;
-      color: var(--pgs-black);
-      font-size: .98rem;
-    }
-    .pgs-section-title .pgs-mini{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(225,29,46,.08);
-      border: 1px solid rgba(225,29,46,.18);
-      color: var(--pgs-red-2);
-      font-size: .78rem;
-      font-weight: 1000;
-      white-space: nowrap;
-    }
-
-    /* Inputs */
-    .pgs-form .form-group label{
-      font-weight: 900;
-      color: rgba(11,15,20,.88);
-      margin-bottom: 6px;
-    }
-    .pgs-form .form-control{
-      border-radius: 14px !important;
-      border: 1px solid rgba(2,6,23,.12) !important;
-      padding: 11px 12px !important;
-      font-weight: 700;
-      color: rgba(11,15,20,.90);
-      background: rgba(255,255,255,.92);
-      transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
-      min-height: 44px;
-    }
-    .pgs-form .form-control:focus{
-      border-color: rgba(225,29,46,.38) !important;
-      box-shadow: 0 0 0 .2rem rgba(225,29,46,.12) !important;
-      transform: translateY(-1px);
-    }
-    .pgs-form .errLbl{ color: var(--pgs-red); font-weight: 1000; }
-
-    /* Radio group */
-    .pgs-radio-wrap{
-      border-radius: 16px;
-      border: 1px dashed rgba(2,6,23,.14);
-      background: rgba(11,15,20,.02);
-      padding: 12px 12px;
-      margin-top: 6px;
-    }
-    .pgs-radio-wrap .form-check{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      padding: 10px 10px;
-      border-radius: 14px;
-      background: rgba(255,255,255,.82);
-      border: 1px solid rgba(2,6,23,.08);
-      margin-bottom: 10px;
-    }
-    .pgs-radio-wrap .form-check:last-child{ margin-bottom: 0; }
-    .pgs-radio-wrap .form-check-input{ margin-top: 0; }
-    .pgs-radio-wrap .form-check-label{
-      font-weight: 900;
-      color: rgba(11,15,20,.86);
-      margin-bottom: 0;
-    }
-
-    /* Right panel: preview */
-    .pgs-preview{
-      display:flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: center;
-    }
-    .pgs-preview-head{
-      width: 100%;
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(11,15,20,1), rgba(11,15,20,.92));
-      color: #fff;
-      border: 1px solid rgba(11,15,20,.12);
-      box-shadow: 0 16px 28px rgba(2,6,23,.18);
-    }
-    .pgs-preview-head .t{
-      font-weight: 1000;
-      letter-spacing: -.01em;
-      font-size: .92rem;
-      margin:0;
-    }
-    .pgs-preview-head .s{
-      display:inline-flex;
-      align-items:center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(225,29,46,.16);
-      border: 1px solid rgba(225,29,46,.28);
-      font-weight: 1000;
-      font-size: .78rem;
-      white-space: nowrap;
-    }
-
-    .defaultavatar{
-      border-radius: 18px;
-      border: 1px solid rgba(2,6,23,.10);
-      background: rgba(255,255,255,.9);
-      box-shadow: var(--pgs-shadow-soft);
-      padding: 10px;
-      max-height: 340px;
-      object-fit: contain;
-    }
-    #video{
-      border-radius: 18px;
-      border: 1px solid rgba(2,6,23,.10);
-      box-shadow: var(--pgs-shadow-soft);
-      background: #000;
-      overflow: hidden;
-    }
-
-    /* Save button */
-    .pgs-btn{
-      border: 1px solid rgba(225,29,46,.26) !important;
-      background: linear-gradient(180deg, var(--pgs-red), var(--pgs-red-2)) !important;
-      color: #fff !important;
-      border-radius: 999px !important;
-      padding: 10px 14px !important;
-      font-weight: 1000 !important;
-      letter-spacing: .01em;
-      box-shadow: 0 12px 22px rgba(225,29,46,.22);
-      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
-      min-width: 140px;
-    }
-    .pgs-btn:hover{
-      transform: translateY(-1px);
-      box-shadow: 0 18px 32px rgba(225,29,46,.26);
-      filter: brightness(1.02);
-    }
-
-    /* Small helper text */
-    .pgs-help{
-      margin: 0;
-      color: rgba(11,15,20,.62);
-      font-weight: 700;
-      font-size: .82rem;
-    }
-
-    /* Mobile stacking optimization */
-    @media (max-width: 991.98px){
-      .pgs-preview-head{ position: sticky; top: 10px; z-index: 2; }
-    }
-  </style>
+:root{--pgs-red:#dc243b;--pgs-red2:#ae172b;--pgs-ink:#111827;--pgs-muted:#536174;--pgs-line:#e4e8ee;--pgs-bg:#f3f5f9;--pgs-radius:20px}
+.content-body{background:var(--pgs-bg);min-height:100vh}
+.content-body .container-fluid{max-width:1180px;padding:12px 14px 100px}
+.pgs-hero{background:#fff;border:1px solid var(--pgs-line);border-radius:var(--pgs-radius);padding:19px 20px;margin-bottom:14px;box-shadow:0 5px 22px rgba(10,25,47,.035)}
+.pgs-hero-title{margin:0;font-size:clamp(1.3rem,3vw,1.7rem);font-weight:800;color:var(--pgs-ink);letter-spacing:-.035em}
+.pgs-hero-sub{margin:6px 0 0;color:var(--pgs-muted);font-size:.9rem;line-height:1.5}
+.pgs-chiprow{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.pgs-chip{border-radius:999px;background:#f6f7f9;border:1px solid #e9edf2;color:#384356;font-size:.75rem;font-weight:650;padding:6px 10px}
+.pgs-chip i{color:var(--pgs-red);margin-right:4px}
+.pgs-card.card{background:#fff;border:1px solid var(--pgs-line)!important;border-radius:var(--pgs-radius)!important;box-shadow:0 5px 22px rgba(10,25,47,.035);overflow:hidden;margin-bottom:14px}
+.pgs-card .card-body{padding:20px!important}
+.pgs-section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px}
+.pgs-section-title h5{margin:0;color:var(--pgs-ink);font-size:1.03rem;font-weight:800}
+.pgs-mini{border-radius:999px;color:#ac152b;background:#fff1f2;padding:6px 10px;font-size:.77rem;font-weight:750}
+.pgs-form .form-group{margin-bottom:17px}
+.pgs-form .form-group label{display:block;margin:0 0 7px;color:#252d3a;font-size:.87rem;font-weight:750}
+.pgs-form .form-control{width:100%;height:auto;min-height:48px;border:1px solid #d5dce5!important;border-radius:13px!important;padding:11px 13px!important;background:#fff;color:#152033;font-size:16px!important;box-shadow:none!important;transition:border-color .18s,box-shadow .18s}
+.pgs-form textarea.form-control{min-height:94px;resize:vertical;line-height:1.45}
+.pgs-form .form-control:focus{border-color:#d82a40!important;box-shadow:0 0 0 3px rgba(220,36,59,.11)!important;outline:0}
+.pgs-form .errLbl{color:var(--pgs-red)}
+.pgs-help{margin:7px 0 0;color:#64748b;font-size:.78rem;line-height:1.45}
+.pgs-radio-wrap{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.pgs-radio-wrap .form-check{position:relative;display:flex;align-items:center;gap:10px;margin:0;padding:12px;border:1px solid #dfe4eb;border-radius:13px;background:#fff;min-height:51px;cursor:pointer}
+.pgs-radio-wrap .form-check:has(input:checked){border-color:#df4458;background:#fff3f5}
+.pgs-radio-wrap input{position:static!important;margin:0!important;accent-color:var(--pgs-red);width:18px;height:18px;flex:none}
+.pgs-radio-wrap .form-check label{font-size:.83rem;margin:0!important;font-weight:700;cursor:pointer;line-height:1.25}
+.pgs-preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.pgs-preview-head .t{margin:0;color:var(--pgs-ink);font-weight:800;font-size:1rem}
+.pgs-preview-head .s{font-size:.75rem;border-radius:999px;padding:6px 10px;background:#f1f4f8;color:#5f6b7a;font-weight:700}
+.pgs-preview{display:flex;flex-direction:column;align-items:stretch}
+.pgs-media-frame{display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px dashed #cbd4df;border-radius:15px;background:#f9fafc;min-height:170px;max-height:310px;margin-bottom:12px}
+.pgs-media-frame .defaultavatar{max-height:260px;max-width:100%;object-fit:contain;display:block}
+.pgs-media-frame #video{width:100%;max-height:310px;object-fit:contain;background:#0b0f14;border-radius:12px}
+.pgs-media-frame #video.none{display:none!important}
+.pgs-camera-select{width:100%;margin-bottom:12px}
+.pgs-camera-select select{min-height:44px;width:100%;border-radius:11px;border:1px solid var(--pgs-line);padding:8px 10px}
+.pgs-btn{background:linear-gradient(120deg,var(--pgs-red),var(--pgs-red2))!important;color:#fff!important;font-weight:800!important;font-size:.96rem!important;border:0!important;border-radius:13px!important;padding:13px 17px!important;min-height:48px;width:100%;box-shadow:0 9px 20px rgba(180,23,45,.16)}
+.pgs-btn:focus-visible{outline:3px solid #f4acba;outline-offset:3px}
+.pgs-btn:disabled{opacity:.65;cursor:wait}
+.pgs-save-wrap{width:100%}
+.pgs-status{display:none;margin-top:10px;padding:10px 12px;border-radius:10px;font-size:.8rem;background:#eff6ff;color:#1e40af}
+.pgs-status.is-visible{display:block}
+.pgs-connection{display:none;align-items:center;gap:7px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:12px;padding:10px 12px;font-size:.8rem;margin-bottom:12px}
+.pgs-connection.is-visible{display:flex}
+.pgs-save-hint{font-size:.78rem;color:#607086;text-align:center;margin:9px 0 0}
+@media(min-width:992px){.pgs-preview-card{position:sticky;top:95px}}
+@media(max-width:767px){.content-body .container-fluid{padding:10px 11px 95px}.pgs-card .card-body{padding:16px!important}.pgs-hero{padding:16px}.pgs-chiprow .pgs-chip:last-child{display:none}.pgs-radio-wrap{grid-template-columns:1fr 1fr}.pgs-save-wrap{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);padding:9px;border:1px solid var(--pgs-line);border-radius:16px;box-shadow:0 10px 25px rgba(17,24,39,.12);z-index:10}}
+@media(max-width:360px){.pgs-radio-wrap{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+/* Mobile photo and network UI */
+#pgsProgress{height:8px;border-radius:100px;background:#e5e7eb;overflow:hidden;width:100%;margin-top:12px}
+#pgsProgressBar{height:100%;width:0%;background:#E11D2E;transition:width .2s ease}
+#pgsGalleryWrap{padding:10px 0}
+.pgs-gallery-label{font-weight:800;display:block;margin-bottom:8px}
+#pgsGalleryPreview[hidden],#pgsGalleryWrap[hidden],#pgsProgress[hidden]{display:none!important}
+#btn_save{min-height:48px;touch-action:manipulation}
+@media(max-width:575.98px){.pgs-radio-wrap .form-check{min-height:50px}.pgs-save-wrap{position:sticky;bottom:env(safe-area-inset-bottom,0px);background:#fff;padding:10px 0;z-index:3}}
+</style>
 </head>
 
 <?php date_default_timezone_set('America/Bogota'); ?>
@@ -328,14 +137,15 @@ if ($isvalidUni) {
               <p class="pgs-hero-sub">Register activities and optionally attach a photo from your camera.</p>
             </div>
             <div class="pgs-chiprow">
-              <span class="pgs-chip"><i class="fa fa-user"></i> <?php echo htmlspecialchars(SessionData::getUserFullName()); ?></span>
-              <span class="pgs-chip"><i class="fa fa-shield"></i> Role: <?php echo htmlspecialchars(SessionData::getUserType()); ?></span>
+              <span class="pgs-chip"><i class="fa fa-user"></i> <?php echo htmlspecialchars((string)SessionData::getUserFullName(), ENT_QUOTES, 'UTF-8'); ?></span>
+              <span class="pgs-chip"><i class="fa fa-shield"></i> Role: <?php echo htmlspecialchars((string)SessionData::getUserType(), ENT_QUOTES, 'UTF-8'); ?></span>
               <span class="pgs-chip"><i class="fa fa-clock-o"></i> <?php echo date('Y-m-d H:i'); ?></span>
             </div>
           </div>
         </div>
 
-        <form id="frm_foto">
+        <div id="pgsConnection" class="pgs-connection" role="status"><i class="fa fa-wifi" aria-hidden="true"></i> You appear to be offline. Keep this form open until your connection returns.</div>
+        <form id="frm_foto" autocomplete="on">
           <input type="hidden" name="op" id="op" />
           <input type="hidden" name="id" id="id" />
 
@@ -352,8 +162,8 @@ if ($isvalidUni) {
                   <div class="row">
                     <div class="col-sm-12">
                       <div class="form-group">
-                        <label class="bmd-label-floating">Property <b class="errLbl">*</b></label>
-                        <select class="form-control" id="tbl_unidad_id" name="tbl_unidad_id">
+                        <label class="bmd-label-floating" for="tbl_unidad_id">Property <b class="errLbl">*</b></label>
+                        <select class="form-control" id="tbl_unidad_id" name="tbl_unidad_id" required>
                           <?php echo $optionRequerimiento; ?>
                         </select>
                         <p class="pgs-help mt-2">Select the property/unit where the activity took place.</p>
@@ -362,25 +172,23 @@ if ($isvalidUni) {
 
                     <div class="col-md-12">
                       <div class="form-group">
-                        <label class="bmd-label-floating">Zone <b class="errLbl">*</b></label>
-                        <input type="text" value="" style="text-transform: uppercase" id="zone" name="zone"
+                        <label class="bmd-label-floating" for="zone">Zone <b class="errLbl">*</b></label>
+                        <input type="text" value="" style="text-transform: uppercase" id="zone" name="zone" maxlength="180" autocomplete="off" required
                           class="form-control" placeholder="e.g., LOBBY / ROOF / PARKING">
                       </div>
                     </div>
 
                     <div class="col-md-12">
                       <div class="form-group">
-                        <label class="bmd-label-floating">Activities <b class="errLbl">*</b></label>
-                        <input type="text" value="" style="text-transform: uppercase" id="actividades" name="actividades"
-                          class="form-control" placeholder="Describe the activity performed">
+                        <label class="bmd-label-floating" for="actividades">Activities <b class="errLbl">*</b></label>
+                        <textarea id="actividades" name="actividades" class="form-control" rows="3" maxlength="2500" required placeholder="Describe what was done, the location and the outcome"></textarea>
                       </div>
                     </div>
 
                     <div class="col-md-12">
                       <div class="form-group">
-                        <label class="bmd-label-floating">Observations</label>
-                        <input type="text" class="form-control" id="observaciones" name="observaciones"
-                          placeholder="Write any additional comments (optional)">
+                        <label class="bmd-label-floating" for="observaciones">Observations</label>
+                        <textarea class="form-control" id="observaciones" name="observaciones" rows="2" maxlength="2500" placeholder="Any additional notes (optional)"></textarea>
                       </div>
                     </div>
 
@@ -398,9 +206,16 @@ if ($isvalidUni) {
                             <input class="form-check-input" type="radio" name="radio_select" id="radiotfoto" value="0">
                             <label class="form-check-label" for="radiotfoto">Take a picture</label>
                           </div>
+                          <div class="form-check radio_check">
+                            <input class="form-check-input" type="radio" name="radio_select" id="radiogaleria" value="2">
+                            <label class="form-check-label" for="radiogaleria">Choose from phone gallery</label>
+                          </div>
                         </div>
-
-                        <p class="pgs-help mt-2">If you select “Take a picture”, the camera will be enabled.</p>
+                        <div id="pgsGalleryWrap" hidden>
+                          <label for="pgsGalleryFile" class="pgs-gallery-label">Select photo</label>
+                          <input type="file" id="pgsGalleryFile" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*" class="form-control" aria-label="Choose photo">
+                        </div>
+                        <p class="pgs-help mt-2">Photos are optimized on your phone before being sent, saving mobile data.</p>
                       </div>
                     </div>
 
@@ -411,7 +226,7 @@ if ($isvalidUni) {
 
             <!-- Right: camera / preview -->
             <div class="col-lg-5">
-              <div class="card pgs-card">
+              <div class="card pgs-card pgs-preview-card">
                 <div class="card-body">
                   <div class="pgs-preview">
                     <div class="pgs-preview-head">
@@ -419,22 +234,26 @@ if ($isvalidUni) {
                       <span class="s"><i class="fa fa-camera"></i> Optional</span>
                     </div>
 
-                    <img class="defaultavatar img-fluid" src="assets/images/no-image.png" alt="No image">
+                    <div class="pgs-media-frame">
+                      <img class="defaultavatar img-fluid" src="assets/images/no-image.png" alt="No photo selected" loading="lazy" decoding="async">
+                      <img id="pgsGalleryPreview" alt="Selected photo preview" hidden decoding="async" style="width:100%;max-height:310px;object-fit:contain;border-radius:12px;">
+                      <video id="video" width="100%" autoplay playsinline muted class="video_container none"></video>
+                    </div>
 
-                    <video id="video" width="100%" autoplay="autoplay" class="video_container none mb-3"></video>
-
-                    <div id="selectcamdevice" style="display: none; width:100%;">
+                    <div id="selectcamdevice" class="pgs-camera-select" style="display: none;">
                       <h3 style="font-weight:1000; color:var(--pgs-black); font-size:1rem; margin:0 0 8px 0;">Select Camera</h3>
                       <select name="listaDeDispositivos" id="listaDeDispositivos" class="form-control"></select>
                     </div>
 
                     <?php if ($create) { ?>
-                      <div class="w-100 text-center">
+                      <div class="pgs-save-wrap">
                         <button class="btn pgs-btn" type="submit" id="btn_save">
                           Save Report
                         </button>
                         <canvas id="canvas" style="display: none;"></canvas>
-                        <p class="pgs-help mt-2 mb-0">Your information will be saved with the selected options.</p>
+                        <div id="pgsSaveStatus" class="pgs-status" role="status" aria-live="polite"></div>
+                        <div id="pgsProgress" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Photo upload"><div id="pgsProgressBar"></div></div>
+                        <p class="pgs-save-hint">Please keep this screen open while sending the report.</p>
                       </div>
                     <?php } ?>
                   </div>
@@ -452,9 +271,22 @@ if ($isvalidUni) {
   <!-- Scripts -->
   <?php include './admin/include/gerenic_script.php'; ?>
 
+  <script src="./admin/js/pgs_photo_optimizer.js"></script>
   <script type="text/javascript" src="./admin/js/camara/camara.js"></script>
   <script type="text/javascript" src="./admin/js/camara/inserta.js"></script>
   <script type="text/javascript" src="./admin/js/report.js"></script>
+<script>
+(function(){
+  var connection = document.getElementById('pgsConnection');
+  var form = document.getElementById('frm_foto');
+  var status = document.getElementById('pgsSaveStatus');
+  function updateConnection(){connection.classList.toggle('is-visible', !navigator.onLine);}
+  window.addEventListener('online', updateConnection);
+  window.addEventListener('offline', updateConnection);
+  updateConnection();
+
+})();
+</script>
 </body>
 
 </html>

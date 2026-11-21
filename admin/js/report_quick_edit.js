@@ -1,13 +1,7 @@
 /**
  * Dashboard bar: editar último reporte no finalizado del usuario en sesión.
  */
-(function (factory) {
-    "use strict";
-    if (typeof jQuery === "undefined") {
-        return;
-    }
-    factory(jQuery);
-})(function ($) {
+(function ($) {
     "use strict";
 
     var currentReport = null;
@@ -323,4 +317,4 @@
         }
         loadLastUnfinished();
     });
-});
+})(jQuery);

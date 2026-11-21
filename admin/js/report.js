@@ -1,11 +1,13 @@
-$(document).on('ready', initusuario);
+$(function(){ initusuario(); });
 var q;
 
 function initusuario() {
     q = {};
-    // No permitir cerrar el modal, click afuera
-    $("#myModal").modal({ backdrop: "static", keyboard: false });
-    $("#myModalAfterPhoto").modal({ backdrop: "static", keyboard: false });
+    // Bootstrap .modal(options) abre el modal de inmediato por defecto.
+    // Prepararlo con show:false evita una capa invisible que bloquea los botones.
+    $("#myModal, #myModalAfterPhoto, #myModalViewDetail").modal({
+        backdrop: "static", keyboard: false, show: false
+    });
 }
 
 var return_page = 'report-list.php';
@@ -22,6 +24,7 @@ var REPORT = {
     setDetailPhoto: function(imgId, emptyId, fileName) {
         var url = REPORT.photoUrl(fileName);
         var $img = $('#' + imgId);
+        $img.attr({loading: 'lazy', decoding: 'async'});
         var $empty = $('#' + emptyId);
         if (url) {
             $img.attr('src', url).removeClass('d-none').show();
@@ -112,7 +115,7 @@ var REPORT = {
         }
         if (data.output.valid) {
             var res = data.output.response[0];
-            $("#id").val(res.id);
+            $("#myModalAfterPhoto #id").val(res.id);
             $('#item').empty().append(res.id);
             if (typeof resetAfterPhotoUi === "function") {
                 resetAfterPhotoUi();
@@ -138,10 +141,10 @@ var REPORT = {
         }
         if (data.output.valid) {
             var res = data.output.response[0];
-            $("#id").val(res.id);      
+            $("#edit_report_id").val(res.id);      
             $('#actividades').val(res.actividades);
             $('#observaciones').val(res.observaciones);     
-            $("#myModal").modal();
+            $("#myModal").modal("show");
         } else {
             swal("warning", data.output.response.content, "error");
         }
@@ -149,7 +152,7 @@ var REPORT = {
     updateFields() {
         q = {};
         q.op = "updateFields";
-        q.id = $("#id").val();
+        q.id = $("#edit_report_id").val();
         q.actividades = $("#actividades").val();
         q.observaciones = $("#observaciones").val(); 
         UTIL.callAjaxRqstPOST(q, REPORT.updateFieldsHandler);

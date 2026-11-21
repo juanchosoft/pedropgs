@@ -3,14 +3,13 @@ require './admin/include/generic_classes.php';
 include './admin/classes/Producto.php';
 include './admin/classes/Unidades.php';
 
-// Permissions
-$view   = SessionData::getPermission(21);
-$create = SessionData::getPermission(17);
-$edit   = SessionData::getPermission(20);
-$delete = SessionData::getPermission(18);
-$enable = SessionData::getPermission(19);
+requirePermission('reportes.daily.view');
 
-if (!$view) { require 'permiso_denegado.php'; }
+$view = SessionData::hasPermission('reportes.daily.view') || SessionData::superAdministrador();
+$create = SessionData::hasPermission('reportes.daily.create') || SessionData::superAdministrador();
+$edit = SessionData::hasPermission('reportes.daily.update') || SessionData::superAdministrador();
+$delete = SessionData::hasPermission('reportes.daily.delete') || SessionData::superAdministrador();
+$enable = SessionData::hasPermission('reportes.daily.enable') || SessionData::superAdministrador();
 
 // Units options
 $arrUnidades = Unidades::getAll(null);

@@ -9,6 +9,7 @@ let $video = document.getElementById("video");
 let currentStream;
 let VIDEO_DATA = false;
 let cameraRequestInFlight = false;
+let cameraGeneration = 0;
 
 function stopMediaTracks(stream) {
     if (!stream) return;
@@ -18,6 +19,7 @@ function stopMediaTracks(stream) {
 }
 
 function stopCurrentStream() {
+    cameraGeneration++;
     if (typeof currentStream !== "undefined" && currentStream) {
         stopMediaTracks(currentStream);
         currentStream = undefined;
@@ -103,6 +105,7 @@ function gotDevices(mediaDevices) {
 }
 
 const mostrarStream = function (idDeDispositivo) {
+    const generation = ++cameraGeneration;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         handleCameraDenied({ message: "Your browser does not support camera access." });
         return;
@@ -139,6 +142,7 @@ const mostrarStream = function (idDeDispositivo) {
             throw err;
         })
         .then(function (stream) {
+            if (generation !== cameraGeneration) { stopMediaTracks(stream); return null; }
             cameraRequestInFlight = false;
             currentStream = stream;
             localstream = stream;
@@ -149,12 +153,14 @@ const mostrarStream = function (idDeDispositivo) {
             });
         })
         .then(function () {
+            if (generation !== cameraGeneration) return [];
             return navigator.mediaDevices.enumerateDevices();
         })
         .then(function (devices) {
-            gotDevices(devices);
+            if (generation === cameraGeneration) gotDevices(devices);
         })
         .catch(function (error) {
+            if (generation !== cameraGeneration) return;
             cameraRequestInFlight = false;
             VIDEO_DATA = false;
             handleCameraDenied(error);
